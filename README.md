@@ -17,3 +17,11 @@ https://www.kaggle.com/pranavbadami/nj-transit-amtrak-nec-performance?select=201
 
 #### What are the use cases for your app and what should the app do?
 
+
+
+## Resources/Data
+
+https://njogis-newjersey.opendata.arcgis.com/
+
+https://njogis-newjersey.opendata.arcgis.com/datasets/NJTRANSIT::rail-stations-of-nj-transit/about
+https://njogis-newjersey.opendata.arcgis.com/datasets/NJTRANSIT::light-rail-stations-of-nj-transit/about
