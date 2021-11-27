@@ -1,0 +1,128 @@
+---
+title: 'Zillow Model Update: Boulder County, CO'
+author: "Jasmine Siyu Wu & Zoe Yoo"
+date: "10/19/2021"
+output:
+  pdf_document:
+    toc: yes
+  ioslides_presentation:
+    self-included: yes
+  html_document:
+    toc: yes
+    toc_float: yes
+    code_folding: hide
+---
+
+
+<br />
+
+
+## 1. Introduction
+[motivation & objectives]
+
+
+
+
+
+```{r setup, include=TRUE, cache = FALSE, message = FALSE}
+knitr::opts_chunk$set(echo = TRUE,fig.width = 10, fig.height = 5)
+
+#Loading Libraries
+library(tidyverse)
+library(sf)
+library(spdep)
+library(caret)
+library(ckanr)
+library(FNN)
+library(grid)
+library(gridExtra)
+library(ggcorrplot)
+library(kableExtra)
+library(jtools)     # for regression model plots
+library(ggstance)
+library(osmdata)
+library(knitr)
+library(tidycensus)
+library(scales)
+library(stargazer)
+library(ggplot2)
+library(ggpubr)
+library(xtable)
+
+
+options(scipen=999) 
+options(tigris_class = "sf")
+options(tigris_use_cache = TRUE)
+
+# functions and data directory
+root.dir = "https://github.com/zoenyoo/MUSA508_Final.git"
+source("https://raw.githubusercontent.com/urbanSpatial/Public-Policy-Analytics-Landing/master/functions.r")
+
+
+#Loading Styling Options
+mapTheme <- function(base_size = 12) {
+  theme(
+    text = element_text( color = "black"),
+    plot.title = element_text(size = 16,colour = "black"),
+    plot.subtitle=element_text(face="italic"),
+    plot.caption=element_text(hjust=0),
+    axis.ticks = element_blank(),
+    panel.background = element_blank(),axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_rect(colour = "black", fill=NA, size=2),
+    strip.text.x = element_text(size = 14))
+}
+
+plotTheme <- function(base_size = 12) {
+  theme(
+    text = element_text( color = "black"),
+    plot.title = element_text(size = 16,colour = "black"),
+    plot.subtitle = element_text(face="italic"),
+    plot.caption = element_text(hjust=0),
+    axis.ticks = element_blank(),
+    panel.background = element_blank(),
+    panel.grid.major = element_line("grey80", size = 0.1),
+    panel.grid.minor = element_blank(),
+    panel.border = element_rect(colour = "black", fill=NA, size=2),
+    strip.background = element_rect(fill = "grey80", color = "white"),
+    strip.text = element_text(size=12),
+    axis.title = element_text(size=12),
+    axis.text = element_text(size=10),
+    plot.background = element_blank(),
+    legend.background = element_blank(),
+    legend.title = element_text(colour = "black", face = "italic"),
+    legend.text = element_text(colour = "black", face = "italic"),
+    strip.text.x = element_text(size = 14)
+  )
+}
+
+#Loading Quantile Break Functions
+qBr <- function(df, variable, rnd) {
+ if (missing(rnd)) {
+    as.character(quantile(round(df[[variable]],0),
+                 c(.01,.2,.4,.6,.8), na.rm=T))
+ } else if (rnd == FALSE | rnd == F) {
+    as.character(formatC(quantile(df[[variable]],
+                 c(.01,.2,.4,.6,.8), na.rm=T), digits = 3))
+ }
+}
+
+
+q5 <- function(variable) {as.factor(ntile(variable, 5))}
+
+#Loading Hexadecimal Color Palette
+
+palette5 <- c("#324376", "#586ba4", "#f5dd90", "#ee964b", "#f95738")
+palette4 <- c("#324376", "#586ba4", "#ee964b", "#f95738")
+palette2 <- c("#324376", "#f95738")
+
+```
+
+
+
+
+
+kaggle datasets download -d pranavbadami/nj-transit-amtrak-nec-performance
