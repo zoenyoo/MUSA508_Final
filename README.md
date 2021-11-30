@@ -5,19 +5,31 @@ https://www.kaggle.com/pranavbadami/nj-transit-amtrak-nec-performance?select=201
 ## Questions
 #### What is the use case? 
 
+Trying to develop a plugin tool (Chrome extension?) that shows users who are planning to buy tickets whether their line/station has a higher likelihood of being delayed (over 20 minutes).
+
 #### How could data make a difference in answering this question? Do you have a sense for the business as usual decision making?
+
+OpenData is the basis of our tool; transit companies and agencies likely have more intricate data that they use to predict delays and decide how to internally optimize departures. 
 
 #### What datasets have you identified to help you answer this question?
 
+We are mainly using a dataset from Kaggle, which scrapes its data from the NJ Transit DepartureVision Real Time Train Status service. We are also using weather data from the RIEM R package.
+
 #### What kind of model would you build and what is the dependent variable?
+
+The model is a regression model, with delay being the dependent variable. 
 
 #### How will you validate this model (cross-validation & goodness of fit metrics that relate to the business process)?
 
+We will validate this model through cross-validation, because we are mostly predicting categorically for different brackets of time, and our data is continuous numeric data.
+
 #### How do you think that stakeholders would want to consume this data?
+
+Our first stakeholders, customers, would use this data to inform their ticket purchasing decisions. If transit agencies or companies become interested in our product, it could also be used for internal predictions and management.
 
 #### What are the use cases for your app and what should the app do?
 
-
+The app will be a plugin or pop-up on ticket purchasing sites for NJ Transit and Amtrak for different lines and times of day, showing the likelihood of delay and how long delay might be for that stop or train.
 
 ## Resources/Data
 
