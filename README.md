@@ -5,7 +5,7 @@ https://www.kaggle.com/pranavbadami/nj-transit-amtrak-nec-performance?select=201
 ## Questions
 #### What is the use case? 
 
-Trying to develop a plugin tool (Chrome extension?) that shows users who are planning to buy tickets whether their line/station has a higher likelihood of being delayed (over 20 minutes).
+Developing a tool for the NJ Transit app, specifically the Trip Planner, to let customers know which trains might be delayed.
 
 #### How could data make a difference in answering this question? Do you have a sense for the business as usual decision making?
 
