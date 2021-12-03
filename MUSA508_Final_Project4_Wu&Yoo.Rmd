@@ -23,7 +23,6 @@ output:
 
 
 
-
 ```{r setup, include=TRUE, cache = FALSE, message = FALSE}
 knitr::opts_chunk$set(echo = TRUE,fig.width = 10, fig.height = 5)
 
