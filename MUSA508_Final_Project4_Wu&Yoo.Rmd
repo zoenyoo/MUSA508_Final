@@ -9,8 +9,6 @@ output:
     code_folding: hide
   ioslides_presentation:
     self-included: yes
-  pdf_document:
-    toc: yes
 ---
 
 
