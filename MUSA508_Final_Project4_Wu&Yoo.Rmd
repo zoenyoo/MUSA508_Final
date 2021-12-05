@@ -21,7 +21,7 @@ output:
 
 
 
-```{r setup, include=TRUE, cache = FALSE, message = FALSE}
+```{r setup, include=TRUE, cache = FALSE, message = FALSE, results=FALSE}
 knitr::opts_chunk$set(echo = TRUE,fig.width = 10, fig.height = 5)
 
 #Loading Libraries
@@ -335,7 +335,7 @@ states <- rbind(get_acs(geography = "state",
 
 
 
-```{r station_plot, cache = TRUE, message = FALSE, warning = FALSE, fig.width=9, fig.align='center'}
+```{r station_plot, cache = TRUE, message = FALSE, warning = FALSE, fig.width=8, fig.align='center'}
 # ggplot() +
 #   geom_sf(data=intersect.counties, color='grey', fill=NA) +
 #   geom_sf(data=station.sf, color=palette2[1], alpha=0.8, size=1) +
