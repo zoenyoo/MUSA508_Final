@@ -1,5 +1,5 @@
 ---
-title: 'Zillow Model Update: Boulder County, CO'
+title: 'Modeling for New Jerser Transit Train Delay'
 author: "Jasmine Siyu Wu & Zoe Yoo"
 date: "10/19/2021"
 output:
@@ -17,7 +17,7 @@ output:
 <br />
 
 
-## 1. Introduction
+## 1. Introduction & Use Case
 [motivation & objectives]
 
 
@@ -50,6 +50,9 @@ library(stargazer)
 library(ggplot2)
 library(ggpubr)
 library(xtable)
+library(ggmap)
+library(leaflet)
+library(expss)
 
 
 options(scipen=999) 
@@ -163,10 +166,9 @@ summary_statistics <-
                              "median" = median(rail$delay_minutes/60),
                              "min" = min(rail$delay_minutes/60),
                              "max" = max(rail$delay_minutes/60))) %>% 
-  as_data_frame()
+  as_data_frame() 
 
 summary_statistics %>% 
-  as_data_frame() %>% 
   kable() %>% 
   kable_styling()
 ```
@@ -174,16 +176,48 @@ summary_statistics %>%
 
 
 
-```{r rail_delay_histogram, cache = TRUE, message = FALSE, warning = FALSE, fig.align='center'}
+```{r rail_delay_histogram, cache = TRUE, message = FALSE, warning = FALSE, fig.align='center', fig.width=15}
 ggplot(rail)+
-  geom_histogram(aes(delay_minutes/60), binwidth = 0.5, fill = palette2[2], alpha=0.8)+
+  geom_histogram(aes(delay_minutes), binwidth = 0.5, fill = palette2[2], alpha=0.8)+
   #xlim(0, 100) +
   labs(title="NJ Transit and Amtrak rail delayed hours",
        subtitle = "New Jersey, Jan. - Feb., 2020",
-       x="Hours", 
+       x="Minues", 
        y="Frequency",
        caption="Figure 2.1")+
   plotTheme()
+```
+
+
+```{r rail_delay_histogram_break, cache = TRUE, message = FALSE, warning = FALSE, fig.align='center', fig.width=15}
+ggarrange(ncol=3,
+          ggplot(subset(rail, delay_minutes<=10))+
+            geom_histogram(aes(delay_minutes), binwidth = 0.5, fill = palette2[2], alpha=0.8)+
+            #xlim(0, 100) +
+            labs(x="Minutes", 
+                 y="Frequency",
+                   title="Delay time of trains at New Jersey Transit stations, Jan. - Feb. 2020",
+                   subtitle="within 10 minutes",
+                 caption="Figure 2.2")+
+            plotTheme(),
+            ggplot(subset(rail, delay_minutes<=60 & delay_minutes > 10))+
+              geom_histogram(aes(delay_minutes), binwidth = 0.5, fill = palette2[2], alpha=0.8)+
+              #xlim(0, 100) +
+              labs(x="Minutes", 
+                   y="Frequency",
+                   title=" ",
+                   subtitle="10 minutes - 1 hour",
+                   caption=" ")+
+              plotTheme(),
+            ggplot(subset(rail, delay_minutes > 60))+
+              geom_histogram(aes(delay_minutes), binwidth = 0.5, fill = palette2[2], alpha=0.8)+
+              #xlim(0, 100) +
+              labs(x="Minutes", 
+                   y="Frequency",
+                   title=" ",
+                   subtitle="over 1 hour",
+                   caption=" 2")+
+              plotTheme())
 
 ```
 
@@ -304,13 +338,146 @@ states <- rbind(get_acs(geography = "state",
 
 
 
-```{r station_plot, cache = TRUE, message = FALSE, warning = FALSE, fig.width=12, fig.align='center'}
-ggplot() +
-  geom_sf(data=intersect.counties, color='grey', fill=NA) +
-  geom_sf(data=station.sf, color=palette2[1], alpha=0.8, size=1) +
-  labs(title="New Jersey Transit and Amtrak Stations",
-       caption = "Figure 2.1") +
-  mapTheme() 
+```{r station_plot, cache = TRUE, message = FALSE, warning = FALSE, fig.width=9, fig.align='center'}
+# ggplot() +
+#   geom_sf(data=intersect.counties, color='grey', fill=NA) +
+#   geom_sf(data=station.sf, color=palette2[1], alpha=0.8, size=1) +
+#   labs(title="New Jersey Transit and Amtrak Stations",
+#        caption = "Figure 2.1") +
+#   mapTheme() 
+
+station.sf %>% st_transform(crs = 4326) %>%
+  st_coordinates() %>% leaflet() %>% addProviderTiles("Thunderforest.Landscape") %>% addProviderTiles("Stamen.TonerHybrid") %>% addMarkers(icon = list(iconSize = c(0.5, 0.5)))
 ```
+
+
+### 2.4. Create Space-Time Panel and Time Lags
+
+
+```{r bike_panel, cache = TRUE, message = FALSE, warning = FALSE}
+# rail.template <- rail %>%
+#   semi_join(st_drop_geometry(station.sf), 
+#             by = c( "to_id" = "STATION_ID"))
+# 
+# length(unique(rail.template$schedule60)) * length(unique(rail.template$to_id))
+# 
+# study.panel <- 
+#   expand.grid(schedule60 = unique(rail.template$schedule60), 
+#               to_station = unique(rail.template$to_id)) 
+# 
+# nrow(study.panel)      
+# 
+# 
+# rail.panel <- 
+#   rail.template %>%
+#     mutate(Train_Counter = 1) %>%
+#     right_join(study.panel) %>% 
+#       group_by(schedule60, to, to_id) %>% 
+#       summarize(Train_Count = sum(Train_Counter, na.rm=T)) %>%
+#       left_join(weather.Panel, by = c( "schedule60" = "interval60")) %>%
+#         left_join(station.sf, by = c( "to_id" = "STATION_ID")) %>%
+#           mutate(week = week(schedule60),
+#                  dotw = wday(schedule60, label = TRUE)) # %>% st_sf()
+# 
+# 
+# rail.panel <- 
+#   rail.panel %>% 
+#     arrange(to_station, schedule60) %>% 
+#     group_by(to_station) %>% 
+#     mutate(lagHour = dplyr::lag(Trip_Count,1),
+#            lag2Hours = dplyr::lag(Trip_Count,2),
+#            lag3Hours = dplyr::lag(Trip_Count,3),
+#            lag4Hours = dplyr::lag(Trip_Count,4),
+#            lag12Hours = dplyr::lag(Trip_Count,12),
+#            lag1day = dplyr::lag(Trip_Count,24)) %>% 
+#    ungroup()
+
+```
+
+
+
+
+## 3. Exploratory Analysis
+
+
+PPM – the percentage of trains arriving at their destination within 5 minutes of schedule
+
+```{r ppm, cache = TRUE, message = FALSE, warning = FALSE}
+
+ppm_summary <- data_frame(var = c("all_pp5", "all_pp10", "all_pp20"), 
+                          val = c(
+                                 round(nrow(subset(rail, delay_minutes<5))/nrow(rail)*100, digits=2),
+                                 round(nrow(subset(rail, delay_minutes<10))/nrow(rail)*100, digits=2),
+                                 round(nrow(subset(rail, delay_minutes<20))/nrow(rail)*100, digits=2)))
+
+ppm_summary[,2] %>%  
+  `rownames<-`(., c("Arrived within 5 minutes", "Arrived within 10 minutes",
+                    "Arrived within 20 minutes")) %>% 
+  kable(col.names = c("Percentage of trains")) %>% kable_styling()
+
+```
+
+
+
+```{r ppm plots, cache = TRUE, message = FALSE, warning = FALSE, fig.width=15}
+station.sf <- rail %>% group_by(to) %>%
+    summarise(train_count = n(),
+              mean_delay_minutes = mean(delay_minutes),
+              ppm_5 = count_if(lt(5), delay_minutes)/train_count,
+              ppm_10 = count_if(lt(10), delay_minutes)/train_count,
+              ppm_20 = count_if(lt(20), delay_minutes)/train_count) %>% 
+    right_join(station.sf, by = c( "to" = "STATION_NAME")) %>%  
+    st_sf() %>%
+    st_transform(crs = 4326) 
+
+
+
+ggarrange(ncol=3,
+    ggplot() +
+      geom_sf(data=intersect.counties, color='grey', fill=NA) +
+      geom_sf(data=na.omit(station.sf), aes(color=ppm_5), size=2) +
+        scale_color_gradient(high = "#FFFFFF", low = palette5[5],
+                             name="PPM 5 minutes") + 
+      labs(title="Pertuality Rate of Trains by Station",
+           subtitle="Jan. - Feb. 2020",
+           caption = "Figure 3.1") +
+      mapTheme(),
+    ggplot() +
+      geom_sf(data=intersect.counties, color='grey', fill=NA) +
+      geom_sf(data=na.omit(station.sf), aes(color=ppm_10), size=2) +
+        scale_color_gradient(high = "#FFFFFF", low = palette5[5],
+                             name="PPM 10 minutes") + 
+      labs(title=" ",
+           subtitle=" ",
+           caption = " ") +
+      mapTheme(),
+    ggplot() +
+      geom_sf(data=intersect.counties, color='grey', fill=NA) +
+      geom_sf(data=na.omit(station.sf), aes(color=ppm_20), size=2) +
+        scale_color_gradient(high = "#FFFFFF", low = palette5[5],
+                             name="PPM 20 minutes") + 
+      labs(title=" ",
+           subtitle=" ",
+           caption = " ") +
+      mapTheme())
+
+```
+
+
+
+
+
+## 4. Modeling and Validation
+
+
+
+
+
+
+
+## 5. Conclusion
+
+
+
 
 
