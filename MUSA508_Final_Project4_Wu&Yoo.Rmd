@@ -462,6 +462,57 @@ ggarrange(ncol=3,
 
 
 
+```{r rail trip timeseries, cache = TRUE, message = FALSE, warning = FALSE, fig.width=12, fig.height=8}
+grid.arrange(
+  ggplot(rail %>%
+           group_by(schedule60) %>%
+           tally())+
+    geom_line(aes(x = schedule60, y = n), color = palette2[2])+
+    labs(title="Total train stops per hour of NJ Transit stations",
+         subtitle="Jan. - Feb., 2020",
+         x="Date", 
+         y="Total train stops",
+         caption=" ")+
+    plotTheme(),
+  ggplot(rail %>%
+           group_by(schedule60) %>%
+           summarise(mean_delay_minutes = mean(delay_minutes)))+
+           #tally())+
+    geom_line(aes(x = schedule60, y = mean_delay_minutes), color = palette2[2])+
+    labs(title="Average delay time per hour of NJ Transit stations",
+         subtitle="Jan. - Feb., 2020",
+         x="Date", 
+         y="Average delay minutes",
+         caption="Figure 3.2")+
+    plotTheme())
+```
+
+
+
+
+```{r day of week, cache = TRUE, message = FALSE, warning = FALSE, fig.height=8, fig.width=10}
+grid.arrange(
+  ggplot(rail)+
+       geom_freqpoly(aes(hour(schedule60), color = dotw), binwidth = 1)+
+       xlim(0, 24)+
+       labs(title="Total rail stops of New Jersey Transit",
+            subtitle = "New Jersey, Jan. - Feb., 2020",
+            x="Hour", 
+            y="Rail Stop Counts", caption = " ")+
+       plotTheme(),
+  ggplot(rail %>% mutate(hour=hour(schedule60)) %>%
+         group_by(hour, dotw) %>%
+         summarise(mean_delay_minutes = mean(delay_minutes)))+
+       geom_line(aes(x=hour, y=mean_delay_minutes, color = dotw), binwidth = 1)+
+       xlim(0, 24)+
+       labs(title="Average delay time per hour of New Jersey Transit",
+            subtitle = "New Jersey, Jan. - Feb., 2020",
+            x="Hour", 
+            y="Average Delay Minutes", caption = "Figure 3.3")+
+       plotTheme())
+```
+
+
 
 
 ## 4. Modeling and Validation
