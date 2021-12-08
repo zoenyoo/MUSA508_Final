@@ -21,7 +21,7 @@ output:
 
 
 
-```{r setup, include=TRUE, cache = FALSE, message = FALSE, results=FALSE}
+```{r setup, include=TRUE,   message = FALSE, results=FALSE}
 knitr::opts_chunk$set(echo = TRUE,fig.width = 10, fig.height = 5)
 
 #Loading Libraries
@@ -136,7 +136,7 @@ palette2 <- c("#324376", "#f95738")
 
 
 
-```{r rail_delay_data, cache = TRUE, message = FALSE, warning = FALSE, fig.align='center'}
+```{r rail_delay_data,  message = FALSE, warning = FALSE, fig.align='center'}
 
 # January for training and 2-3 weeks in February for testing
 rail_2020_01 <- read.csv(unz('Data/2020_01.csv.zip','2020_01.csv'), header = T)
@@ -173,7 +173,7 @@ summary_statistics %>%
 
 
 
-```{r rail_delay_histogram, cache = TRUE, message = FALSE, warning = FALSE, fig.align='center', fig.width=15}
+```{r rail_delay_histogram,  message = FALSE, warning = FALSE, fig.align='center', fig.width=15}
 ggplot(rail)+
   geom_histogram(aes(delay_minutes), binwidth = 0.5, fill = palette2[2], alpha=0.8)+
   #xlim(0, 100) +
@@ -186,7 +186,7 @@ ggplot(rail)+
 ```
 
 
-```{r rail_delay_histogram_break, cache = TRUE, message = FALSE, warning = FALSE, fig.align='center', fig.width=15}
+```{r rail_delay_histogram_break,  message = FALSE, warning = FALSE, fig.align='center', fig.width=15}
 ggarrange(ncol=3,
           ggplot(subset(rail, delay_minutes<=10))+
             geom_histogram(aes(delay_minutes), binwidth = 0.5, fill = palette2[2], alpha=0.8)+
@@ -224,7 +224,7 @@ ggarrange(ncol=3,
 
 
 
-```{r weather_data, cache = TRUE, message = FALSE, warning = FALSE, fig.align='center'}
+```{r weather_data,  message = FALSE, warning = FALSE, fig.align='center'}
 
 #https://mesonet.agron.iastate.edu/request/download.phtml?network=CA_ASOS
 # EWR station is at Newark International Airport
@@ -267,7 +267,7 @@ grid.arrange(bottom="Figure 2.2 Weather Data, New Jersey, January - February, 20
 ### 2.3. Import Station and Place Data
 
 
-```{r station_data, cache = TRUE, message = FALSE, warning = FALSE, results = FALSE, fig.align='center'}
+```{r station_data,  message = FALSE, warning = FALSE, results = FALSE, fig.align='center'}
 station.sf <- st_read("https://opendata.arcgis.com/datasets/4809dada94c542e0beff00600ee930f6_0.geojson") %>%
   st_transform("EPSG:3424") %>% #NAD83 / New Jersey (ftUS) 
   rename(STATION_NAME = STATION_ID)
@@ -335,7 +335,7 @@ states <- rbind(get_acs(geography = "state",
 
 
 
-```{r station_plot, cache = TRUE, message = FALSE, warning = FALSE, fig.width=8, fig.align='center'}
+```{r station_plot,  message = FALSE, warning = FALSE, fig.width=8, fig.align='center'}
 # ggplot() +
 #   geom_sf(data=intersect.counties, color='grey', fill=NA) +
 #   geom_sf(data=station.sf, color=palette2[1], alpha=0.8, size=1) +
@@ -351,7 +351,7 @@ station.sf %>% st_transform(crs = 4326) %>%
 ### 2.4. Create Space-Time Panel and Time Lags
 
 
-```{r bike_panel, cache = TRUE, message = FALSE, warning = FALSE}
+```{r bike_panel,  message = FALSE, warning = FALSE}
 # rail.template <- rail %>%
 #   semi_join(st_drop_geometry(station.sf), 
 #             by = c( "to_id" = "STATION_ID"))
@@ -399,7 +399,7 @@ station.sf %>% st_transform(crs = 4326) %>%
 
 PPM – the percentage of trains arriving at their destination within 5 minutes of schedule
 
-```{r ppm, cache = TRUE, message = FALSE, warning = FALSE}
+```{r ppm,  message = FALSE, warning = FALSE}
 
 ppm_summary <- data_frame(var = c("all_pp5", "all_pp10", "all_pp20"), 
                           val = c(
@@ -416,7 +416,7 @@ ppm_summary[,2] %>%
 
 
 
-```{r ppm plots, cache = TRUE, message = FALSE, warning = FALSE, fig.width=15}
+```{r ppm plots,  message = FALSE, warning = FALSE, fig.width=15}
 station.sf <- rail %>% group_by(to) %>%
     summarise(train_count = n(),
               mean_delay_minutes = mean(delay_minutes),
@@ -460,7 +460,7 @@ ggarrange(ncol=3,
 
 
 
-```{r rail trip timeseries, cache = TRUE, message = FALSE, warning = FALSE, fig.width=12, fig.height=8}
+```{r rail trip timeseries,  message = FALSE, warning = FALSE, fig.width=12, fig.height=8}
 grid.arrange(
   ggplot(rail %>%
            group_by(schedule60) %>%
@@ -488,7 +488,7 @@ grid.arrange(
 
 
 
-```{r day of week, cache = TRUE, message = FALSE, warning = FALSE, fig.height=8, fig.width=10}
+```{r day of week, message = FALSE, warning = FALSE, fig.height=8, fig.width=10}
 grid.arrange(
   ggplot(rail)+
        geom_freqpoly(aes(hour(schedule60), color = dotw), binwidth = 1)+
