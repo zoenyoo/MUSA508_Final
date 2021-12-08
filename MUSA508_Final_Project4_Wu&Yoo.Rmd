@@ -177,9 +177,9 @@ summary_statistics %>%
 ggplot(rail)+
   geom_histogram(aes(delay_minutes), binwidth = 0.5, fill = palette2[2], alpha=0.8)+
   #xlim(0, 100) +
-  labs(title="NJ Transit and Amtrak rail delayed hours",
-       subtitle = "New Jersey, Jan. - Feb., 2020",
-       x="Minues", 
+  labs(title="NJ Transit Rail Delay",
+       subtitle = "New Jersey, Jan-Feb 2020",
+       x="Minutes", 
        y="Frequency",
        caption="Figure 2.1")+
   plotTheme()
@@ -193,7 +193,7 @@ ggarrange(ncol=3,
             #xlim(0, 100) +
             labs(x="Minutes", 
                  y="Frequency",
-                   title="Delay time of trains at New Jersey Transit stations, Jan. - Feb. 2020",
+                   title="Delay Time of Trains at New Jersey Transit Stations, Jan-Feb 2020",
                    subtitle="within 10 minutes",
                  caption="Figure 2.2")+
             plotTheme(),
@@ -213,7 +213,7 @@ ggarrange(ncol=3,
                    y="Frequency",
                    title=" ",
                    subtitle="over 1 hour",
-                   caption=" 2")+
+                   caption="")+
               plotTheme())
 
 ```
@@ -250,15 +250,15 @@ weather.Panel <-
 grid.arrange(bottom="Figure 2.2 Weather Data, New Jersey, January - February, 2020",
   ggplot(weather.Panel, aes(interval60, Percipitation)) +
     geom_line(color = palette2[2]) + 
-    labs(title="Percipitation", x="Hour", y="Percipitation") + 
+    labs(title="Precipitation", x="Hour", y="Precipitation (in.)") + 
     plotTheme(),
   ggplot(weather.Panel, aes(interval60, Wind_Speed)) + 
     geom_line(color = palette2[2]) + 
-    labs(title="Wind Speed", x="Hour", y="Wind Speed") + 
+    labs(title="Wind Speed", x="Hour", y="Wind Speed (mph)") + 
     plotTheme(),
   ggplot(weather.Panel, aes(interval60, Temperature)) + 
     geom_line(color = palette2[2]) + 
-    labs(title="Temperature", x="Hour", y="Temperature") + 
+    labs(title="Temperature", x="Hour", y="Temperature (F)") + 
     plotTheme())
 ```
 
@@ -427,16 +427,14 @@ station.sf <- rail %>% group_by(to) %>%
     st_sf() %>%
     st_transform(crs = 4326) 
 
-
-
 ggarrange(ncol=3,
     ggplot() +
       geom_sf(data=intersect.counties, color='grey', fill=NA) +
       geom_sf(data=na.omit(station.sf), aes(color=ppm_5), size=2) +
         scale_color_gradient(high = "#FFFFFF", low = palette5[5],
                              name="PPM 5 minutes") + 
-      labs(title="Pertuality Rate of Trains by Station",
-           subtitle="Jan. - Feb. 2020",
+      labs(title="Punctuality Rate of Trains by Station",
+           subtitle="Jan-Feb 2020",
            caption = "Figure 3.1") +
       mapTheme(),
     ggplot() +

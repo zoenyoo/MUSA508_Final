@@ -7,6 +7,7 @@ https://www.kaggle.com/pranavbadami/nj-transit-amtrak-nec-performance?select=201
 
 Developing a tool for the NJ Transit app, specifically the Trip Planner, to let customers know which trains might be delayed.
 
+
 #### How could data make a difference in answering this question? Do you have a sense for the business as usual decision making?
 
 OpenData is the basis of our tool; transit companies and agencies likely have more intricate data that they use to predict delays and decide how to internally optimize departures. 
@@ -17,7 +18,7 @@ We are mainly using a dataset from Kaggle, which scrapes its data from the NJ Tr
 
 #### What kind of model would you build and what is the dependent variable?
 
-The model is a regression model, with delay being the dependent variable. 
+The model is a regression model, with delay being the dependent variable. By using a regression model, we hope to calculate a more precise estimate of delay than we would just by calculating the overall mean. We will divide possible delay (considered >10 minutes) by different brackets, giving customers varying notifications by different times of delay (e.g. 10-20min, 20-30min, etc.)
 
 #### How will you validate this model (cross-validation & goodness of fit metrics that relate to the business process)?
 
@@ -42,6 +43,10 @@ NJ Transit light rail station: https://njogis-newjersey.opendata.arcgis.com/data
 
 Amtrak Station: https://geo.dot.gov/server/rest/services/NTAD/Amtrak_Stations/MapServer/0
 
+
+https://www.southernrailway.com/about-us/how-were-performing/train-service-punctuality-and-reliability
+- PPM - the percentage of trains arriving at their destination within 5 minutes of schedule
+- On Time - the percentage of trains arriving at the scheduled time at each station stop on a journey
 
 ## Inspiration by the dataset owner:
 Lots of interesting, high-impact projects could be driven by this data:
