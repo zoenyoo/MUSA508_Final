@@ -1,0 +1,16 @@
+1. For our final project, the app that Jasmine and I chose to develop is a Delay Estimator, or a delay prediction model that forecasts rail delay on the New Jersey transit system.
+
+2. New Jersey Transit and Amtrak both serve as commuter rail between Philadelphia, New Jersey, and New York. Because of this, we originally planned to develop a website add-on for people buying their train tickets in advance. However, the Amtrak data does not include schedule times, which left us only with NJ Transit data.
+
+3.  New Jersey Transit has a different system than Amtrak: it only sells tickets on its mobile app, or in person. Additionally, its ticket prices do not fluctuate like Amtrak tickets, which vary based on date of reservation. Because of this, predicting delay far in advance is not as important for our project.
+
+4. So, we decided to conceptualize a tool for the New Jersey Transit App, and in particular, its Trip Planner feature. In the app's Trip Planner, users currently choose an origin and destination station, a date and time, and a factor to minimize (for example, travel time or walking distance). It then returns the schedule options available for that date and time.
+
+5. In this "Trip Options" screen, we aim to add an indicator for possible delay for each schedule option available, that refers to the total predicted time delay for each trip. Yellow indicates 10-19 minutes combined predicted delay, orange for 20-29 minutes, and red for over 30 minutes. There is no indicator for under 10 minutes, as we consider that "acceptable."
+
+6. In the Detailed Trip View, we would also add the same icons and categorization color scheme for each leg of a trip. 
+
+7. We are mainly using a dataset from Kaggle, which scrapes its data from the NJ Transit DepartureVision Real Time Train Status service. Our sample months are January and Feburary 2021. The dataset is made up of basic identification, spatial, and temporal data. We have also added weather data through the RIEM R package.
+
+8. We first needed to actually determine if delay is severe enough often enough to warrant developing a model. As you can see, delay 
+
