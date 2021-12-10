@@ -142,7 +142,8 @@ palette2 <- c("#324376", "#f95738")
 rail_2020_01 <- read.csv(unz('Data/2020_01.csv.zip','2020_01.csv'), header = T)
 rail_2020_02 <- read.csv(unz('Data/2020_02.csv.zip','2020_02.csv'), header = T)
 
-rail <- rbind(rail_2020_01, rail_2020_02) %>%
+
+rail_all <- rbind(rail_2020_01, rail_2020_02) %>%
   mutate(schedule60 = floor_date(ymd_hms(scheduled_time), unit = "hour"),
          actual60 = floor_date(ymd_hms(actual_time), unit = "hour"),
          week = week(schedule60),
@@ -150,23 +151,29 @@ rail <- rbind(rail_2020_01, rail_2020_02) %>%
          year = year(schedule60),
          month = month(schedule60)) %>%
   drop_na(delay_minutes)
-  #filter(week %in% c(14:18))
+  #filter(week %in% c(14:18)) 
 
+remove(rail_2020_01)
+remove(rail_2020_02)
+
+
+rail_cancelled <- subset(rail_all, status == "cancelled")
+rail <- subset(rail_all, status != "cancelled")
 
 summary_statistics <- 
   cbind(" " = list( "mean", "median", "min", "max"),
-        "Delay_minutes" = list( "mean" = mean(rail$delay_minutes),
-                                "median" = median(rail$delay_minutes),
-                                "min" = min(rail$delay_minutes),
-                                "max" = max(rail$delay_minutes)),
-        "Dalay_hours" = list("mean" = mean(rail$delay_minutes/60),
-                             "median" = median(rail$delay_minutes/60),
-                             "min" = min(rail$delay_minutes/60),
-                             "max" = max(rail$delay_minutes/60))) %>% 
+        "Delay_minutes" = list( "mean" = round(mean(rail$delay_minutes), digits=3),
+                                "median" = round(median(rail$delay_minutes), digits=3),
+                                "min" = round(min(rail$delay_minutes), digits=3),
+                                "max" = round(max(rail$delay_minutes), digits=3)),
+        "Dalay_hours" = list("mean" = round(mean(rail$delay_minutes/60), digits=3),
+                             "median" =  round(median(rail$delay_minutes/60), digits=3),
+                             "min" =  round(min(rail$delay_minutes/60), digits=3),
+                             "max" =  round(max(rail$delay_minutes/60), digits=3))) %>% 
   as_data_frame() 
 
 summary_statistics %>% 
-  kable() %>% 
+  kable(digits=2, caption="Summary statistics of delay time at all recorded station stops - Jan.-Feb. 2020") %>% 
   kable_styling()
 ```
 
@@ -177,8 +184,8 @@ summary_statistics %>%
 ggplot(rail)+
   geom_histogram(aes(delay_minutes), binwidth = 0.5, fill = palette2[2], alpha=0.8)+
   #xlim(0, 100) +
-  labs(title="NJ Transit Rail Delay",
-       subtitle = "New Jersey, Jan-Feb 2020",
+  labs(title="New Jersey Transit Rail Delay at All Stops",
+       subtitle = "Jan.-Feb. 2020",
        x="Minutes", 
        y="Frequency",
        caption="Figure 2.1")+
@@ -224,12 +231,13 @@ ggarrange(ncol=3,
 
 
 
-```{r weather_data,  message = FALSE, warning = FALSE, fig.align='center'}
+```{r weather_data,  message = FALSE, warning = FALSE, fig.align='center', fig.width=8, fig.height=6}
 
 #https://mesonet.agron.iastate.edu/request/download.phtml?network=CA_ASOS
 # EWR station is at Newark International Airport
 weather.Data <- 
   riem_measures(station = "EWR", date_start = "2020-01-01", date_end = "2020-03-01") 
+
 
 
 weather.Panel <-  
@@ -245,7 +253,7 @@ weather.Panel <-
               Wind_Speed = max(sknt)) %>%
     mutate(Temperature = ifelse(Temperature == 0, 42, Temperature))
 
-
+remove(weather.Data)
 
 grid.arrange(bottom="Figure 2.2 Weather Data, New Jersey, January - February, 2020",
   ggplot(weather.Panel, aes(interval60, Percipitation)) +
@@ -348,46 +356,51 @@ station.sf %>% st_transform(crs = 4326) %>%
 ```
 
 
+
+
 ### 2.4. Create Space-Time Panel and Time Lags
 
 
 ```{r bike_panel,  message = FALSE, warning = FALSE}
-# rail.template <- rail %>%
-#   semi_join(st_drop_geometry(station.sf), 
-#             by = c( "to_id" = "STATION_ID"))
-# 
-# length(unique(rail.template$schedule60)) * length(unique(rail.template$to_id))
-# 
-# study.panel <- 
-#   expand.grid(schedule60 = unique(rail.template$schedule60), 
-#               to_station = unique(rail.template$to_id)) 
-# 
-# nrow(study.panel)      
-# 
-# 
-# rail.panel <- 
-#   rail.template %>%
-#     mutate(Train_Counter = 1) %>%
-#     right_join(study.panel) %>% 
-#       group_by(schedule60, to, to_id) %>% 
-#       summarize(Train_Count = sum(Train_Counter, na.rm=T)) %>%
-#       left_join(weather.Panel, by = c( "schedule60" = "interval60")) %>%
-#         left_join(station.sf, by = c( "to_id" = "STATION_ID")) %>%
-#           mutate(week = week(schedule60),
-#                  dotw = wday(schedule60, label = TRUE)) # %>% st_sf()
-# 
-# 
-# rail.panel <- 
-#   rail.panel %>% 
-#     arrange(to_station, schedule60) %>% 
-#     group_by(to_station) %>% 
-#     mutate(lagHour = dplyr::lag(Trip_Count,1),
-#            lag2Hours = dplyr::lag(Trip_Count,2),
-#            lag3Hours = dplyr::lag(Trip_Count,3),
-#            lag4Hours = dplyr::lag(Trip_Count,4),
-#            lag12Hours = dplyr::lag(Trip_Count,12),
-#            lag1day = dplyr::lag(Trip_Count,24)) %>% 
-#    ungroup()
+rail.template <- rail %>%
+  semi_join(st_drop_geometry(station.sf),
+            by = c( "to_id" = "STATION_ID"))
+
+length(unique(rail.template$schedule60)) * length(unique(rail.template$to_id))
+
+study.panel <-
+  expand.grid(schedule60 = unique(rail.template$schedule60),
+              to_id = unique(rail.template$to_id))
+
+nrow(study.panel)
+
+
+rail.panel <-
+  rail.template %>%
+    mutate(Train_Counter = 1) %>%
+    right_join(study.panel) %>%
+      group_by(schedule60, to, to_id) %>%
+      summarize(Train_Count = sum(Train_Counter, na.rm=T),
+                mean_delay_minutes = mean(delay_minutes, na.rm=T)) %>%
+      left_join(weather.Panel, by = c( "schedule60" = "interval60")) %>%
+        left_join(station.sf, by = c( "to_id" = "STATION_ID")) %>%
+          mutate(week = week(schedule60),
+                 dotw = wday(schedule60, label = TRUE)) # %>% st_sf()
+
+
+rail.panel <-
+  rail.panel %>%
+    arrange(STATION_NAME, schedule60) %>%
+    group_by(STATION_NAME) %>%
+    mutate(lag12Hours = dplyr::lag(mean_delay_minutes,12),
+           lag1day = dplyr::lag(mean_delay_minutes,24),
+           lag2day = dplyr::lag(mean_delay_minutes,48),
+           lag3day = dplyr::lag(mean_delay_minutes,72),
+           lag4day = dplyr::lag(mean_delay_minutes,96),
+           lag5day = dplyr::lag(mean_delay_minutes,120),
+           lag6day = dplyr::lag(mean_delay_minutes,144),
+           lag7day = dplyr::lag(mean_delay_minutes,168)) %>%
+   ungroup()
 
 ```
 
@@ -417,13 +430,13 @@ ppm_summary[,2] %>%
 
 
 ```{r ppm plots,  message = FALSE, warning = FALSE, fig.width=15}
-station.sf <- rail %>% group_by(to) %>%
+station.sf <- rail %>% group_by(to_id) %>%
     summarise(train_count = n(),
               mean_delay_minutes = mean(delay_minutes),
               ppm_5 = count_if(lt(5), delay_minutes)/train_count,
               ppm_10 = count_if(lt(10), delay_minutes)/train_count,
               ppm_20 = count_if(lt(20), delay_minutes)/train_count) %>% 
-    right_join(station.sf, by = c( "to" = "STATION_NAME")) %>%  
+    right_join(station.sf, by = c( "to_id" = "STATION_ID")) %>%  
     st_sf() %>%
     st_transform(crs = 4326) 
 
@@ -465,7 +478,7 @@ grid.arrange(
   ggplot(rail %>%
            group_by(schedule60) %>%
            tally())+
-    geom_line(aes(x = schedule60, y = n), color = palette2[2])+
+    geom_line(aes(x = schedule60, y = n), color = palette2[1])+
     labs(title="Total train stops per hour of NJ Transit stations",
          subtitle="Jan. - Feb., 2020",
          x="Date", 
@@ -511,13 +524,267 @@ grid.arrange(
 ```
 
 
+```{r correlation_lag, cache = TRUE, message = FALSE, warning = FALSE, fig.height=4, fig.width=12}
+plotData.lag <-
+  as.data.frame(rail.panel) %>% drop_na(mean_delay_minutes) %>%
+  group_by(schedule60) %>%
+  summarise_at(c("lag12Hours","lag1day",
+               "lag2day", "lag3day", 
+               "lag4day", "lag5day", 
+               "lag6day", "lag7day", "mean_delay_minutes"), mean, na.rm = TRUE) %>%
+   dplyr::select(starts_with("lag"), mean_delay_minutes) %>%
+  gather(Variable, Value, -mean_delay_minutes) %>%
+  mutate(Variable = factor(Variable, levels=c("lag12Hours","lag1day",
+                                              "lag2day", "lag3day", 
+                                              "lag4day", "lag5day", 
+                                              "lag6day", "lag7day")))
+         
+correlation.lag <- plotData.lag %>% 
+  drop_na(Value) %>%
+  group_by(Variable) %>%
+  summarize(correlation = round(cor(Value, mean_delay_minutes, use = "complete.obs"), 2)) 
 
+
+
+ggplot(data=plotData.lag, aes(Value, mean_delay_minutes)) +
+  geom_point(size = .1) +
+  geom_smooth(method = 'lm', se = F, color = palette2[2]) +
+  geom_text(data = correlation.lag, color=palette2[2],
+            aes(label = paste('r =', correlation)),
+            x = -Inf, y = Inf, vjust = 1.5, 
+            hjust = -.1, size = 5) +
+  facet_wrap(~Variable, ncol=8) +
+  labs(title = 'Rail delay minutes as a function of time lags', 
+       x = 'Lag mean delay minutes',
+       y = 'Mean delay minutes',
+       caption = "Figure 3.4") +
+  plotTheme()
+
+```
 
 ## 4. Modeling and Validation
 
 
 
+### 4.1 Preparing Train and Test Sets
 
+```{r serial_correlation, cache = TRUE, message = FALSE, warning = FALSE, fig.width=12, fig.height=4}
+mondays <- 
+  mutate(rail,
+         monday = ifelse(dotw == "Mon" & hour(schedule60) == 0,
+                         schedule60, 0)) %>%
+  filter(monday != 0) 
+
+rail <- rail %>% 
+  left_join(as_data_frame(rail.panel) %>% 
+           dplyr::select(to_id, schedule60,
+                         LATITUDE, LONGITUDE, 
+                         Temperature, Percipitation, Wind_Speed,
+                         lag12Hours,lag1day,lag2day, lag3day, 
+                         lag4day, lag5day, lag6day, lag7day, mean_delay_minutes),  
+           by=c("to_id" = "to_id", "schedule60" = "schedule60")) %>%
+  rename(to_lag12Hours = lag12Hours, to_lag1day = lag1day,
+         to_lag2day = lag2day, to_lag3day = lag3day,
+         to_lag4day = lag4day, to_lag5day = lag5day,
+         to_lag6day = lag6day, to_lag7day = lag7day,
+         to_mean_delay_minutes = mean_delay_minutes) %>%
+  left_join(as_data_frame(rail.panel) %>%
+            dplyr::select(lag12Hours,lag1day,lag2day, lag3day,
+                         lag4day, lag5day, lag6day, lag7day,
+                         mean_delay_minutes, to_id, schedule60),
+           by=c("from_id" = "to_id", "schedule60" = "schedule60")) %>%
+  rename(from_lag12Hours = lag12Hours, from_lag1day = lag1day,
+         from_lag2day = lag2day, from_lag3day = lag3day,
+         from_lag4day = lag4day, from_lag5day = lag5day,
+         from_lag6day = lag6day, from_lag7day = lag7day,
+         from_mean_delay_minutes = mean_delay_minutes)
+
+
+rail.Train <- filter(rail, week < 6)
+rail.Test <- filter(rail, week >= 6 & week < 9)
+
+
+rbind(mutate(rail.Train, Legend = "Training"), 
+      mutate(rail.Test, Legend = "Testing")) %>%
+    group_by(Legend, schedule60) %>% 
+      summarise(mean_delay_minutes = mean(delay_minutes)) %>%
+      ungroup() %>% 
+      ggplot(aes(schedule60, mean_delay_minutes, colour = Legend)) + geom_line() +
+        scale_colour_manual(values = palette2) +
+        geom_vline(data = mondays, aes(xintercept = monday)) +
+        labs(title="Rail trips by week: Januray-February",
+             x="Day", y="Mean Delay Minutes",
+             caption = "4.1") +
+        plotTheme() + 
+        theme(panel.grid.major = element_blank())    
+```
+
+### 4.2 Run Models
+
+```{r train_test, message = FALSE, warning = FALSE, results="asis"}
+reg1 <- 
+  lm(delay_minutes ~  hour(schedule60) + dotw + Temperature + Percipitation,  data=rail.Train)
+
+```
+
+```{r train_test_2, message = FALSE, warning = FALSE, results="asis"}
+
+reg2 <- 
+  lm(delay_minutes ~  from + to + line + dotw + Temperature + Percipitation,  data=rail.Train)
+
+
+```
+
+```{r train_test_3, message = FALSE, warning = FALSE, results="asis"}
+reg3 <-
+  lm(delay_minutes ~  from + to + line + hour(schedule60) + dotw + Temperature + Percipitation,  data=rail.Train)
+
+```
+
+```{r train_test_4, message = FALSE, warning = FALSE, results="asis"}
+
+reg4 <-
+  lm(delay_minutes ~  from + to + line + hour(schedule60) + dotw + Temperature + Percipitation + 
+       to_lag12Hours + to_lag1day + to_lag7day + from_lag12Hours + from_lag1day + from_lag7day,  data=rail.Train)
+
+
+# stargazer(reg1, reg2, reg3, reg4, digits=3,
+#           type="html", title="Table 4.1 Regression results",
+#           single.row=TRUE,
+#           column.labels=c("A. Time", "B. Space",
+#                           "C. Time Space",
+#                           "D. Time Space Timelag",
+#                           "E. Time Space Timelag Transit"))
+
+
+# summary(reg1) %>% 
+#   xtable() %>%
+#   kable(align='c', caption="Regression Model 1", 
+#         digits=2) %>%
+#   kable_styling() %>%
+#   scroll_box(width = "100%", height = "300px")
+```
+
+
+
+<br />
+
+
+
+### 4.3. Predict for Test Data
+
+
+```{r predict_for_test, warning = FALSE, message = FALSE}
+# nest data
+rail.Test.weekNest <- 
+  subset(rail.Test, 
+         !from %in% c("Lake Hopatcong", "Lindenwold", "Middletown NY", 
+                      "North Elizabeth", "Princeton Junction", 
+                      "South Orange", "Secaucus Concourse") & 
+           !to %in% c("Lake Hopatcong", 
+                      "Lindenwold", "Middletown NY", 
+                      "North Elizabeth", "Princeton Junction", 
+                      "South Orange", "Secaucus Concourse")) %>% 
+  group_by(week) %>%
+  tidyr::nest()
+  #nest(-week)
+
+# predict function
+model_pred <- function(dat, fit){
+   pred <- predict(fit, newdata = dat)}
+
+
+# do predictions
+week_predictions <- 
+  rail.Test.weekNest %>% 
+    mutate(ATime_FE = map(.x = data, fit = reg1, .f = model_pred),
+           BSpace_FE = map(.x = data, fit = reg2, .f = model_pred),
+           CTime_Space_FE = map(.x = data, fit = reg3, .f = model_pred),
+           DTime_Space_FE_timeLags = map(.x = data, fit = reg4, .f = model_pred)) %>% 
+    gather(Regression, Prediction, -data, -week) %>%
+    mutate(Observed = map(data, pull, delay_minutes),
+           Absolute_Error = map2(Observed, Prediction,  ~ abs(.x - .y)),
+           MAE = map_dbl(Absolute_Error, mean, na.rm = TRUE),
+           sd_AE = map_dbl(Absolute_Error, sd, na.rm = TRUE))
+
+```
+
+<br />
+
+### 4.4. Validate Test Set by Time
+
+
+```{r plot_errors_by_model, warning = FALSE, message = FALSE, fid.width=12}
+# week_predictions <- week_predictions %>%  
+#     gather(Regression, Prediction, -data, -week) %>% 
+#     mutate(Observed = map(data, pull, Trip_Count),
+#            Absolute_Error = map2(Observed, Prediction,  ~ abs(.x - .y)),
+#            MAE = map_dbl(Absolute_Error, mean),
+#            sd_AE = map_dbl(Absolute_Error, sd))
+
+
+week_predictions %>% 
+  dplyr::select(Regression, MAE, week) %>%  
+  gather(Variable, MAE, -Regression, -week) %>% 
+  ggplot(aes(week, MAE)) + 
+    geom_bar(aes(fill = Regression), position = "dodge", stat="identity") +
+    scale_fill_manual(values = palette5) +
+    labs(title = "Mean Absolute Errors by model specification and week",
+         caption="Figure 4.2") +
+  plotTheme()
+```
+
+
+
+```{r error_vs_actual_timeseries, warning = FALSE, message = FALSE, fig.width=9, fig.height=6}
+
+week_predictions %>%  
+  mutate(schedule60 = map(data, pull, schedule60),
+         to = map(data, pull, to)) %>%
+  dplyr::select(schedule60, to, Observed, Prediction, Regression) %>%
+  unnest() %>%
+  gather(Variable, Value, -Regression, -schedule60, -to, -week) %>%
+    group_by(Regression, Variable, schedule60) %>%
+    summarize(Value = mean(Value)) %>%
+    ggplot(aes(schedule60, Value, colour=Variable)) + geom_line(size = 1.1) + 
+      facet_wrap(~Regression, ncol=1) +
+      scale_colour_manual(values = palette2) +
+      labs(title = "Mean Predicted/Observed train delay minutes by hourly interval", 
+           x = "Hour", y= "Mean delay minutes",
+           caption = "Figure 4.3") +
+      plotTheme()
+```
+<br />
+
+
+### 4.5. Validate Test Set by Space
+
+
+```{r validation_space, cache=TRUE, warning = FALSE, message = FALSE}
+ggplot()+
+  geom_sf(data=intersect.counties, fill="transparent",color = "gray") +
+  geom_sf(data = (week_predictions %>% 
+                      mutate(schedule60 = map(data, pull, schedule60),
+                             to = map(data, pull, to)) %>%
+                      select(schedule60, to, Observed, Prediction, Regression, -week) %>%
+                      unnest(cols = c(schedule60, to, Observed, Prediction)) %>%
+                      filter(Regression %in% c("DTime_Space_FE_timeLags")) %>%
+                      group_by(schedule60, Regression, to) %>%
+                      summarize(MAE = mean(abs(Observed-Prediction), na.rm = TRUE))%>%
+                      left_join(station.sf, by = c("to" = "STATION_NAME"))),
+             aes(color = MAE, geometry=geometry))+
+  scale_color_gradient(high = "#f95738", low = "#fabbaf", limits = c(0, 0.4)) +
+  facet_wrap(~Regression, ncol=2) +
+  labs(title="Mean Abs Error of Test Set", 
+       subtitle="Model D", 
+       caption = "Figure 4.4") +
+  mapTheme()
+
+```
+
+<br />
+
+### 4.6. Cross-Validaton
 
 
 
