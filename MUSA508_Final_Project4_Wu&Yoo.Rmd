@@ -1,5 +1,5 @@
 ---
-title: 'Modeling for New Jerser Transit Train Delay'
+title: 'Modeling for New Jersey Transit Train Delay'
 author: "Jasmine Siyu Wu & Zoe Yoo"
 date: "10/19/2021"
 output:
@@ -16,9 +16,14 @@ output:
 
 
 ## 1. Introduction & Use Case
-[motivation & objectives]
 
+  For our project, we chose to estimate and model delays in the New Jersey Transit system. Our use case is to develop a tool for the NJ Transit app, specifically the Trip Planner tool, to let customers know which trains might be delayed.  
+  New Jersey Transit and Amtrak both serve as commuter rail between Philadelphia, New Jersey, and New York. As Amtrak runs alongside, and is a competitor for, NJ Transit, we originally planned to also develop a website add-on for people buying their train tickets in advance. However, in the Kaggle dataset we use, the Amtrak data only includes actual departure times, not schedule times, which left us without any information on delay for Amtrak trains. 
+  New Jersey Transit has a different ticketing system than Amtrak: tickets are only sold through the NJ Transit mobile app or in person, at stations. Additionally, its ticket prices do not fluctuate like Amtrak tickets, which vary based on date of reservation; there is no limit to the number of tickets sold, and one-way tickets have no expiry date. Due to these differences, predicting delay far in advance is not as important for our project, as people can buy tickets as-needed, even on the day of travel, without an influence in pricing. 
+  So, we decided to conceptualize a tool for the New Jersey Transit App, and in particular, its Trip Planner feature. This tool is not geared towards ticket purchases, but for the convenience of customers who are planning when to take their trips. In the app's Trip Planner, users currently choose an origin and destination station, a date and time, and a factor to minimize (for example, travel time or walking distance). It then returns the schedule options available for that date and time.
 
+  In this "Trip Options" screen, we aim to add an indicator for possible delay for each schedule option available, that refers to the total predicted time delay for each trip. Yellow indicates 10-19 minutes combined predicted delay, orange for 20-29 minutes, and red for over 30 minutes. There is no indicator for under 10 minutes, as we consider that "acceptable."
+  In the Detailed Trip View, we would also add the same icons and categorization color scheme for each leg of a trip.
 
 
 ```{r setup, include=TRUE,   message = FALSE, results=FALSE}
@@ -49,6 +54,7 @@ library(ggpubr)
 library(xtable)
 library(ggmap)
 library(leaflet)
+library(leaflet.providers)
 library(expss)
 
 
@@ -177,7 +183,7 @@ summary_statistics %>%
   kable_styling()
 ```
 
-
+We first needed to actually determine if delay is severe enough often enough to warrant developing a model. As you can see, most trains in our sample set are delayed under ten minutes, with frequency reaching very low levels for delay over 40 minutes, and even less for over an hour.
 
 
 ```{r rail_delay_histogram,  message = FALSE, warning = FALSE, fig.align='center', fig.width=15}
@@ -229,7 +235,7 @@ ggarrange(ncol=3,
 
 ### 2.2. Import Weather Data
 
-
+Through the RIEM package, we import weather data to integrate into the modeling. There are three types of weather data available: precipitation, wind speed, and temperature. As trains are not affected by temperature the same way other modes of transportation might be (i.e. walking or cycling), it is most likely the least influential of our weather data. Precipitation generally would not delay service outside of extreme storms, in which snow buildup or mudslides might make tracks unusable; wind speed is similar, but has the potential to contribute to factors like blown-over trees. 
 
 ```{r weather_data,  message = FALSE, warning = FALSE, fig.align='center', fig.width=8, fig.height=6}
 
@@ -237,8 +243,6 @@ ggarrange(ncol=3,
 # EWR station is at Newark International Airport
 weather.Data <- 
   riem_measures(station = "EWR", date_start = "2020-01-01", date_end = "2020-03-01") 
-
-
 
 weather.Panel <-  
   weather.Data %>%
@@ -341,7 +345,7 @@ states <- rbind(get_acs(geography = "state",
 
 ```
 
-
+#### Map of NJ Transit Stations
 
 ```{r station_plot,  message = FALSE, warning = FALSE, fig.width=8, fig.align='center'}
 # ggplot() +
@@ -352,7 +356,10 @@ states <- rbind(get_acs(geography = "state",
 #   mapTheme() 
 
 station.sf %>% st_transform(crs = 4326) %>%
-  st_coordinates() %>% leaflet() %>% addProviderTiles("Thunderforest.Landscape") %>% addProviderTiles("Stamen.TonerHybrid") %>% addMarkers(icon = list(iconSize = c(0.5, 0.5)))
+  st_coordinates() %>% leaflet() %>% 
+  addTiles() %>% 
+  addProviderTiles("Thunderforest.Landscape") %>% addProviderTiles("Stamen.TonerHybrid") %>% 
+  addMarkers(icon = list(iconSize = c(0.5, 0.5)))
 ```
 
 
@@ -361,7 +368,7 @@ station.sf %>% st_transform(crs = 4326) %>%
 ### 2.4. Create Space-Time Panel and Time Lags
 
 
-```{r bike_panel,  message = FALSE, warning = FALSE}
+```{r rail_panel,  message = FALSE, warning = FALSE}
 rail.template <- rail %>%
   semi_join(st_drop_geometry(station.sf),
             by = c( "to_id" = "STATION_ID"))
@@ -791,6 +798,9 @@ ggplot()+
 ## 5. Conclusion
 
 
+There are definitely roads in which to both improve our model and expand upon the work we have already done. 
+
+As Amtrak runs in the same areas as NJ Transit, it would be useful to compare the delays between the two systems. To accomplish this, the next step would be to insert actual schedule times into the Kaggle data, enabling us to calculate delays and develop a prediction model. 
 
 
 
