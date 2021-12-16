@@ -19,20 +19,20 @@ output:
 
   For our project, we chose to estimate and model delays in the New Jersey Transit system. Our use case is to develop a tool for the NJ Transit app, specifically the Trip Planner tool, to let customers know which trains might be delayed.  
 
-
   New Jersey Transit and Amtrak both serve as commuter rail between Philadelphia, New Jersey, and New York. As Amtrak runs alongside, and is a competitor for, NJ Transit, we originally planned to also develop a website add-on for people buying their train tickets in advance. However, in the Kaggle dataset we use, the Amtrak data only includes actual departure times, not schedule times, which left us without any information on delay for Amtrak trains. 
 
   New Jersey Transit has a different ticketing system than Amtrak: tickets are only sold through the NJ Transit mobile app or in person, at stations. Additionally, its ticket prices do not fluctuate like Amtrak tickets, which vary based on date of reservation; there is no limit to the number of tickets sold, and one-way tickets have no expiry date. Due to these differences, predicting delay far in advance is not as important for our project, as people can buy tickets as-needed, even on the day of travel, without an influence in pricing. 
   
   So, we decided to conceptualize a tool for the New Jersey Transit App, and in particular, its Trip Planner feature. This tool is not geared towards ticket purchases, but for the convenience of customers who are planning when to take their trips. In the app's Trip Planner, users currently choose an origin and destination station, a date and time, and a factor to minimize (for example, travel time or walking distance). It then returns the schedule options available for that date and time.
 
-  In this "Trip Options" screen, we aim to add an indicator for possible delay for each schedule option available, that refers to the total predicted time delay for each trip. Yellow indicates 10-19 minutes combined predicted delay, orange for 20-29 minutes, and red for over 30 minutes. There is no indicator for under 10 minutes, as we consider that "acceptable."
+  In this "Trip Options" screen, we aim to add an indicator for possible delay for each schedule option available, that refers to the total predicted time delay for each trip. Yellow indicates 10-19 minutes combined predicted delay, orange for 20-29 minutes, and red for over 30 minutes. There is no indicator for under 10 minutes, as we consider that to be an acceptable level of delay. In the Detailed Trip View, we would also add the same icons and categorization color scheme for each leg of a trip.
   
-  In the Detailed Trip View, we would also add the same icons and categorization color scheme for each leg of a trip.
+```{r images, echo=FALSE, out.width="33%", out.height="20%,fig.cap="caption",fig.show='hold',fig.align='center'}
+knitr::include_graphics(c("./images/sc1.png","./images/sc2.png","./images/sc3.png"))
 
 
-
-```{r , include=TRUE, warning=FALSE,  message = FALSE, results=FALSE}
+```
+```{r setup, include=TRUE, warning=FALSE,  message = FALSE, results=FALSE}
 knitr::opts_chunk$set(echo = TRUE,fig.width = 10, fig.height = 5, warning = FALSE, message = FALSE)
 
 
@@ -192,7 +192,7 @@ summary_statistics %>%
   kable_styling()
 ```
 
-We first needed to actually determine if delay is severe enough often enough to warrant developing a model. As you can see, most trains in our sample set are delayed under ten minutes, with frequency reaching very low levels for delay over 40 minutes, and even less for over an hour.
+We first needed to actually determine if delay is severe enough often enough to warrant developing a model. Most trains in our sample set are delayed under ten minutes, with frequency reaching very  low levels for delay over 40 minutes, and even less for over an hour.
 
 
 ```{r rail delay histogram,  message = FALSE, warning = FALSE, fig.align='center', fig.width=15}
@@ -372,8 +372,6 @@ station.sf %>% st_transform(crs = 4326) %>%
 ```
 
 
-
-
 ### 2.4. Create Space-Time Panel and Time Lags
 
 
@@ -426,7 +424,6 @@ rail.panel <-
 ## 3. Exploratory Analysis
 
 
-PPM – the percentage of trains arriving at their destination within 5 minutes of schedule
 
 ```{r ppm data,  message = FALSE, warning = FALSE}
 
@@ -443,7 +440,7 @@ ppm_summary[,2] %>%
 
 ```
 
-
+To further examine delay, we used two metrics from the UK Southern Railroad; the first, "on time," considers the percentage of trains that arrive at each stop on schedule. For New Jersey Transit, the on-time rate of trains is usually low, with most trains only reaching each stop at its scheduled time 10-20% of the time.
 
 ```{r on time rate plots,  message = FALSE, warning = FALSE, fig.width=15}
 station.sf <- rail %>% group_by(to_id) %>%
@@ -470,6 +467,7 @@ ggplot(as.data.frame(station.sf))+
             plotTheme()
 ```
 
+The second indicator is the "Public Performance Measure," which refers to the percentage of trains that arrive at their stops within 5 minutes. Even using different brackets for PPM, it is clear that PPM varies spatially (and is especially low on the Philly-Atlantic City line). So, we concluded that there are sufficient delays within the system to warrant modeling.
 
 ```{r ppm plots,  message = FALSE, warning = FALSE, fig.width=15}
 ggarrange(ncol=3,
@@ -586,9 +584,9 @@ ggplot(data=plotData.lag, aes(Value, mean_delay_minutes)) +
             x = -Inf, y = Inf, vjust = 1.5, 
             hjust = -.1, size = 5) +
   facet_wrap(~Variable, ncol=8) +
-  labs(title = 'Rail delay minutes as a function of time lags', 
-       x = 'Lag mean delay minutes',
-       y = 'Mean delay minutes',
+  labs(title = 'Rail Delay Minutes as a Function of Time Lags', 
+       x = 'Lag Mean Delay (min)',
+       y = 'Mean Delay (min)',
        caption = "Figure 3.4") +
   plotTheme()
 
@@ -599,6 +597,8 @@ ggplot(data=plotData.lag, aes(Value, mean_delay_minutes)) +
 
 
 ### 4.1 Preparing Train and Test Sets
+
+For our models, we train on the first five weeks of our dataset and test on the last three. 
 
 ```{r serial_correlation, cache = TRUE, message = FALSE, warning = FALSE, fig.width=12, fig.height=4}
 mondays <- 
@@ -644,14 +644,17 @@ rbind(mutate(rail.Train, Legend = "Training"),
       ggplot(aes(schedule60, mean_delay_minutes, colour = Legend)) + geom_line() +
         scale_colour_manual(values = palette2) +
         geom_vline(data = mondays, aes(xintercept = monday)) +
-        labs(title="Rail trips by week: Januray-February",
+        labs(title="NJ Transit Rail Trips by Week",
+             subtitle="January-February 2021",
              x="Day", y="Mean Delay Minutes",
-             caption = "4.1") +
+             caption = "Figure 4.1") +
         plotTheme() + 
         theme(panel.grid.major = element_blank())    
 ```
 
 ### 4.2 Run Models
+
+We have developed four different models with increasing levels of detail. The first regression includes time and weather data and the second includes spatial and weather data; the third model combines the two. The fourth, and most detailed model, includes the aforementioned data, as well as data on lag time and stop sequencing. As can be seen in Table 4.1, the fourth model has the highest R^2^ value, so we will continue to test with this model.
 
 ```{r train_test, message = FALSE, warning = FALSE, results="asis"}
 reg1 <- 
@@ -689,7 +692,7 @@ stargazer(reg1, reg2, reg3, reg4, type="html", star.cutoffs = c(0.05, 0.01, 0.00
 
 summary(reg4) %>%
   xtable() %>%
-  kable(align='c', caption="Regression Model 1",
+  kable(align='c', caption="Table 4.2 Regression Model 4",
         digits=2) %>%
   kable_styling() %>%
   scroll_box(width = "100%", height = "300px")
@@ -703,7 +706,6 @@ summary(reg4) %>%
 
 
 ### 4.3. Predict for Test Data
-
 
 ```{r predict_for_test, warning = FALSE, message = FALSE}
 # nest data
@@ -765,7 +767,7 @@ week_predictions %>%
   plotTheme()
 ```
 
-
+When testing the prediction models on the last three weeks of data, a few notable effects emerge. The time and space model, which combines temporal, spatial, and weather data, predicts fairly accurately for general trends and spikes of low delay, but misses most short periods of high delay. With the fourth model, that adds time lag, the model clearly attempts to replicate spikes of high delay based on those present in previous data; however, the exact dates for high delay occurrences are not predicted accurately, presumably because there are additional variables contributing to specific events.
 
 ```{r error_vs_actual_timeseries, warning = FALSE, message = FALSE, fig.width=9, fig.height=6}
 week_predictions %>%  
@@ -818,7 +820,6 @@ ggplot()+
 ### 4.6. Cross-Validaton
 
 
-
 ```{r cross validation, warning = FALSE, message = FALSE, fig.width=10, results=FALSE}
 ride.panel8week <- rbind(
   mutate(rail.Train, Legend = "Training", hour = hour(schedule60)), 
@@ -830,7 +831,6 @@ ride.panel8week <- rbind(
                       "Lindenwold", "Middletown NY", 
                       "North Elizabeth", "Princeton Junction", 
                       "South Orange", "Secaucus Concourse"))
-
 
 reg.vars <-
   c("from", "to", "stop_sequence", "line", "schedule60", "dotw", "Temperature", "Percipitation", 
@@ -956,14 +956,14 @@ error.fold.time %>%
   summarize(CrossValidation = "LOGO CV by day of the Week",
                 Mean_MAE = round(mean(MAE), 3),
                 SD_MAE = round(sd(MAE), 3)) %>%
-  kable(caption = "Table 4.2 LOGO-CV errors") %>%
+  kable(caption = "Table 4.3 LOGO-CV errors") %>%
   kable_styling()
 ```
 
 
 ## 5. Conclusion
 
-There are definitely roads in which to both improve our model and expand upon the work we have already done. 
+
 
 As Amtrak runs in the same areas as NJ Transit, it would be useful to compare the delays between the two systems. To accomplish this, the next step would be to insert actual schedule times into the Kaggle data, enabling us to calculate delays and develop a prediction model. 
 
