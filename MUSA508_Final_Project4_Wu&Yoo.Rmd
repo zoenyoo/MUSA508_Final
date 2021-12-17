@@ -900,7 +900,7 @@ ggarrange(ncol=2, nrow=2,
 
 Of each actual delay time category, our model successfully capture 46%, 58%, 59% and 9% of delayed trains.
 
-```{r validation table, cache=TRUE, warning = FALSE, message = FALSE, fig.width=16}
+```{r ppm validation table, cache=TRUE, warning = FALSE, message = FALSE, fig.width=16}
 ppm_accuracy <- data_frame(var = c("Within 5 minutes", "within 10 minutes", "within 20 minutes", "above 20 minutes"), 
                            val = c(
                                    round(nrow(subset(ppm_validation, ppm_5 == "1" & Prediction < 5))/nrow(subset(ppm_validation, ppm_5 == "1"))*100, digits=2),
