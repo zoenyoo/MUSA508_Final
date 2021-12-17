@@ -27,12 +27,15 @@ output:
 
   In this "Trip Options" screen, we aim to add an indicator for possible delay for each schedule option available, that refers to the total predicted time delay for each trip. Yellow indicates 10-19 minutes combined predicted delay, orange for 20-29 minutes, and red for over 30 minutes. There is no indicator for under 10 minutes, as we consider that to be an acceptable level of delay. In the Detailed Trip View, we would also add the same icons and categorization color scheme for each leg of a trip.
   
-```{r images, echo=FALSE, out.width="33%", out.height="20%,fig.cap="caption",fig.show='hold',fig.align='center'}
-knitr::include_graphics(c("./images/sc1.png","./images/sc2.png","./images/sc3.png"))
+<br />
+  
+```{r images, echo=FALSE, out.width="33%", out.height="20%", fig.cap="Fig 1.1 Example App Screen",fig.show='hold',fig.align='center'}
 
+# functions and data directory
+root.dir = "https://github.com/zoenyoo/MUSA508_Final.git"
+source("https://raw.githubusercontent.com/urbanSpatial/Public-Policy-Analytics-Landing/master/functions.r")
 
-```
-```{r setup, include=TRUE, warning=FALSE,  message = FALSE, results=FALSE}
+knitr::include_graphics(c("images/sc1.png","images/sc2.png","images/sc3.png"))
 knitr::opts_chunk$set(echo = TRUE,fig.width = 10, fig.height = 5, warning = FALSE, message = FALSE)
 
 
@@ -41,6 +44,11 @@ options(tigris_class = "sf")
 options(tigris_use_cache = TRUE)
 options(knitr.duplicate.label = "allow")
 
+
+```
+
+
+```{r setup, include=TRUE, warning=FALSE,  message = FALSE, results=FALSE}
 
 #Loading Libraries
 library(tidyverse)
@@ -68,12 +76,6 @@ library(xtable)
 library(ggmap)
 library(leaflet)
 library(expss)
-
-
-
-# functions and data directory
-root.dir = "https://github.com/zoenyoo/MUSA508_Final.git"
-source("https://raw.githubusercontent.com/urbanSpatial/Public-Policy-Analytics-Landing/master/functions.r")
 
 
 #Loading Styling Options
@@ -138,6 +140,7 @@ palette2 <- c("#324376", "#f95738")
 
 ```
 
+<br />
 
 <br />
 
@@ -188,14 +191,14 @@ summary_statistics <-
   as_data_frame() 
 
 summary_statistics %>% 
-  kable(digits=2, caption="Summary statistics of delay time at all recorded station stops - Jan.-Feb. 2020") %>% 
+  kable(digits=2, caption="Table 2.1 Summary statistics of delay time at all recorded station stops - Jan.-Feb. 2020") %>% 
   kable_styling()
 ```
 
 We first needed to actually determine if delay is severe enough often enough to warrant developing a model. Most trains in our sample set are delayed under ten minutes, with frequency reaching very  low levels for delay over 40 minutes, and even less for over an hour.
 
 
-```{r rail delay histogram,  message = FALSE, warning = FALSE, fig.align='center', fig.width=15}
+```{r rail delay histogram,  message = FALSE, warning = FALSE, fig.align='center', fig.width=10}
 ggplot(rail)+
   geom_histogram(aes(delay_minutes), binwidth = 0.5, fill = palette2[2], alpha=0.8)+
   #xlim(0, 100) +
@@ -215,7 +218,7 @@ ggarrange(ncol=3,
             #xlim(0, 100) +
             labs(x="Minutes", 
                  y="Frequency",
-                   title="Delay Time of Trains at New Jersey Transit Stations, Jan-Feb 2020",
+                   title="Delay Time of Trains at All Stops, Jan-Feb 2020",
                    subtitle="within 10 minutes",
                  caption="Figure 2.2")+
             plotTheme(),
@@ -240,7 +243,7 @@ ggarrange(ncol=3,
 
 ```
 
-
+<br />
 
 ### 2.2. Import Weather Data
 
@@ -271,7 +274,7 @@ weather.Panel <-
 
 remove(weather.Data)
 
-grid.arrange(bottom="Figure 2.2 Weather Data, New Jersey, January - February, 2020",
+grid.arrange(bottom="Figure 2.3 Weather Data, New Jersey, January - February, 2020",
   ggplot(weather.Panel, aes(interval60, Percipitation)) +
     geom_line(color = palette2[2]) + 
     labs(title="Precipitation", x="Hour", y="Precipitation (in.)") + 
@@ -286,9 +289,9 @@ grid.arrange(bottom="Figure 2.2 Weather Data, New Jersey, January - February, 20
     plotTheme())
 ```
 
+<br />
 
-
-### 2.3. Import Station and Place Data
+### 2.3. Import Station and Place Boundary Data
 
 
 ```{r station data,  message = FALSE, warning = FALSE, results = FALSE, fig.align='center'}
@@ -371,6 +374,7 @@ station.sf %>% st_transform(crs = 4326) %>%
   st_coordinates() %>% leaflet() %>% addProviderTiles("Thunderforest.Landscape") %>% addProviderTiles("Stamen.TonerHybrid") %>% addMarkers(icon = list(iconSize = c(0.5, 0.5)))
 ```
 
+<br />
 
 ### 2.4. Create Space-Time Panel and Time Lags
 
@@ -418,7 +422,9 @@ rail.panel <-
 
 ```
 
+<br />
 
+<br />
 
 
 ## 3. Exploratory Analysis
@@ -436,13 +442,15 @@ ppm_summary <- data_frame(var = c("all_pp5", "all_pp10", "all_pp20"),
 ppm_summary[,2] %>%  
   `rownames<-`(., c("Arrived within 5 minutes", "Arrived within 10 minutes",
                     "Arrived within 20 minutes")) %>% 
-  kable(col.names = c("Percentage of trains")) %>% kable_styling()
+  kable(col.names = c("Percentage of trains"), 
+        caption="Table 3.1 Punctuality rate of all stops (Jan.- Feb. 2020)") %>% 
+  kable_styling()
 
 ```
 
 To further examine delay, we used two metrics from the UK Southern Railroad; the first, "on time," considers the percentage of trains that arrive at each stop on schedule. For New Jersey Transit, the on-time rate of trains is usually low, with most trains only reaching each stop at its scheduled time 10-20% of the time.
 
-```{r on time rate plots,  message = FALSE, warning = FALSE, fig.width=15}
+```{r on time rate plots,  message = FALSE, warning = FALSE, fig.width=10}
 station.sf <- rail %>% group_by(to_id) %>%
     summarise(train_count = n(),
               mean_delay_minutes = mean(delay_minutes),
@@ -461,7 +469,7 @@ ggplot(as.data.frame(station.sf))+
             #xlim(0, 100) +
             labs(x="On time rate", 
                  y="Frequency",
-                   title="On-Time Rate of Trains at New Jersey Transit Stations",
+                   title="On-Time Rate of Trains by New Jersey Transit Station",
                    subtitle="Jan-Feb 2020",
                  caption="Figure 3.1")+
             plotTheme()
@@ -478,7 +486,7 @@ ggarrange(ncol=3,
                              name="PPM 5 minutes") + 
       labs(title="Punctuality Rate of Trains by Station",
            subtitle="Jan-Feb 2020",
-           caption = "Figure 3.1") +
+           caption = "Figure 3.2") +
       mapTheme(),
     ggplot() +
       geom_sf(data=intersect.counties, color='grey', fill=NA) +
@@ -509,27 +517,27 @@ grid.arrange(
            group_by(schedule60) %>%
            tally())+
     geom_line(aes(x = schedule60, y = n), color = palette2[1])+
-    labs(title="Total train stops per hour of NJ Transit stations",
+    labs(title="Total train stops per hour of all NJ Transit stations",
          subtitle="Jan. - Feb., 2020",
          x="Date", 
          y="Total train stops",
-         caption=" ")+
+         caption="Figure 3.3")+
     plotTheme(),
   ggplot(rail %>%
            group_by(schedule60) %>%
            summarise(mean_delay_minutes = mean(delay_minutes)))+
            #tally())+
     geom_line(aes(x = schedule60, y = mean_delay_minutes), color = palette2[2])+
-    labs(title="Average delay time per hour of NJ Transit stations",
+    labs(title="Average delay time per hour of all NJ Transit stations",
          subtitle="Jan. - Feb., 2020",
          x="Date", 
          y="Average delay minutes",
-         caption="Figure 3.2")+
+         caption="Figure 3.4")+
     plotTheme())
 ```
 
 
-
+In Figure 3.6, We noticed there are some time processes of train delay by day of the week and time of the day, so we engineered new variables of each train record: `weekday` and `time_of_day`.
 
 ```{r day of week, message = FALSE, warning = FALSE, fig.height=8, fig.width=10}
 grid.arrange(
@@ -539,7 +547,7 @@ grid.arrange(
        labs(title="Total rail stops of New Jersey Transit",
             subtitle = "New Jersey, Jan. - Feb., 2020",
             x="Hour", 
-            y="Rail Stop Counts", caption = " ")+
+            y="Rail Stop Counts", caption = "Figure 3.5")+
        plotTheme(),
   ggplot(rail %>% mutate(hour=hour(schedule60)) %>%
          group_by(hour, dotw) %>%
@@ -549,8 +557,18 @@ grid.arrange(
        labs(title="Average delay time per hour of New Jersey Transit",
             subtitle = "New Jersey, Jan. - Feb., 2020",
             x="Hour", 
-            y="Average Delay Minutes", caption = "Figure 3.3")+
+            y="Average Delay Minutes", caption = "Figure 3.6")+
        plotTheme())
+
+rail <- rail %>%
+  mutate(hour = hour(schedule60),
+         time_of_day = case_when(hour < 7 | hour > 22 ~ "Overnight",
+                                 hour >= 7 & hour < 11 ~ "Morning",
+                                 hour >= 11 & hour < 13 ~ "Noon",
+                                 hour >= 13 & hour < 17 ~ "Afternoon",
+                                 hour >= 17 & hour <= 22 ~ "Night"),
+         weekday = case_when(dotw %in% c("Mon", "Tue", "Wed", "Thu", "Fri") ~ "Weekday",
+                             dotw %in% c("Sat", "Sun")  ~ "Weekend"))
 ```
 
 
@@ -584,26 +602,32 @@ ggplot(data=plotData.lag, aes(Value, mean_delay_minutes)) +
             x = -Inf, y = Inf, vjust = 1.5, 
             hjust = -.1, size = 5) +
   facet_wrap(~Variable, ncol=8) +
-  labs(title = 'Rail Delay Minutes as a Function of Time Lags', 
+  labs(title = 'Train Delay Time as a Function of Time Lags', 
        x = 'Lag Mean Delay (min)',
        y = 'Mean Delay (min)',
-       caption = "Figure 3.4") +
+       caption = "Figure 3.7") +
   plotTheme()
 
 ```
 
+<br />
+
+<br />
+
+
 ## 4. Modeling and Validation
 
 
+<br />
 
 ### 4.1 Preparing Train and Test Sets
 
 For our models, we train on the first five weeks of our dataset and test on the last three. 
 
-```{r serial_correlation, cache = TRUE, message = FALSE, warning = FALSE, fig.width=12, fig.height=4}
+```{r serial_correlation, cache = TRUE, message = FALSE, warning = FALSE, fig.width=10, fig.height=3}
 mondays <- 
   mutate(rail,
-         monday = ifelse(dotw == "Mon" & hour(schedule60) == 0,
+         monday = ifelse(dotw == "Mon" & hour == 0,
                          schedule60, 0)) %>%
   filter(monday != 0) 
 
@@ -652,22 +676,24 @@ rbind(mutate(rail.Train, Legend = "Training"),
         theme(panel.grid.major = element_blank())    
 ```
 
+<br />
+
 ### 4.2 Run Models
 
 We have developed four different models with increasing levels of detail. The first regression includes time and weather data and the second includes spatial and weather data; the third model combines the two. The fourth, and most detailed model, includes the aforementioned data, as well as data on lag time and stop sequencing. As can be seen in Table 4.1, the fourth model has the highest R^2^ value, so we will continue to test with this model.
 
 ```{r train_test, message = FALSE, warning = FALSE, results="asis"}
 reg1 <- 
-  lm(delay_minutes ~  hour(schedule60) + dotw + Temperature + Percipitation,  data=rail.Train)
+  lm(delay_minutes ~  hour + dotw + Temperature + Percipitation,  data=rail.Train)
 
 reg2 <- 
   lm(delay_minutes ~  from + to + line + dotw + Temperature + Percipitation,  data=rail.Train)
 
 reg3 <-
-  lm(delay_minutes ~  from + to + line + hour(schedule60) + dotw + Temperature + Percipitation,  data=rail.Train)
+  lm(delay_minutes ~  from + to + line + hour + dotw + Temperature + Percipitation,  data=rail.Train)
 
 reg4 <-
-  lm(delay_minutes ~  from + to + stop_sequence + line + hour(schedule60) + dotw + Temperature + Percipitation + 
+  lm(delay_minutes ~  from + to + stop_sequence + line + hour + time_of_day + weekday + dotw + Temperature + Percipitation + 
        to_lag12Hours + to_lag1day + to_lag7day + from_lag12Hours + from_lag1day + from_lag7day,  data=rail.Train)
 
 
@@ -686,13 +712,13 @@ omitList <- append(names(reg1$coefficients),
             unique()
 
 stargazer(reg1, reg2, reg3, reg4, type="html", star.cutoffs = c(0.05, 0.01, 0.001), 
-          median=TRUE, title="Table 4.1 Training Set Baseline Regression Results", align=TRUE,
-          single.row=TRUE, digits=2, omit = append(omitList, c("dotw4", "dotw5", "dotw6", "hour(schedule)")))
+          median=TRUE, title="Table 4.1 Training Set Baseline Regression Results (Hide independent variables)", align=TRUE,
+          single.row=TRUE, digits=2, omit = append(omitList, c("dotw4", "dotw5", "dotw6")))
 
 
 summary(reg4) %>%
   xtable() %>%
-  kable(align='c', caption="Table 4.2 Regression Model 4",
+  kable(align='c', caption="Table 4.2 Independent Variables in Model D",
         digits=2) %>%
   kable_styling() %>%
   scroll_box(width = "100%", height = "300px")
@@ -704,8 +730,8 @@ summary(reg4) %>%
 <br />
 
 
-
 ### 4.3. Predict for Test Data
+
 
 ```{r predict_for_test, warning = FALSE, message = FALSE}
 # nest data
@@ -744,10 +770,10 @@ week_predictions <-
 
 <br />
 
-### 4.4. Validate Test Set by Time
+### 4.4. Validate Test Set by Time and Space
 
 
-```{r plot_errors_by_model, warning = FALSE, message = FALSE, fid.width=12}
+```{r plot_errors_by_model, warning = FALSE, message = FALSE, fid.width=10}
 # week_predictions <- week_predictions %>%  
 #     gather(Regression, Prediction, -data, -week) %>% 
 #     mutate(Observed = map(data, pull, Trip_Count),
@@ -762,7 +788,7 @@ week_predictions %>%
   ggplot(aes(week, MAE)) + 
     geom_bar(aes(fill = Regression), position = "dodge", stat="identity") +
     scale_fill_manual(values = palette5) +
-    labs(title = "Mean Absolute Errors by model specification and week",
+    labs(title = "Mean Absolute Errors (MAE) by model specification and week",
          caption="Figure 4.2") +
   plotTheme()
 ```
@@ -786,33 +812,109 @@ week_predictions %>%
            caption = "Figure 4.3") +
       plotTheme()
 ```
+
 <br />
 
 
-### 4.5. Validate Test Set by Space
+As shown in Figure 4.4, many stations lack enough information to be predicted so that they display in light grey. Model D performs better in explaining time process than spatial process. In the last session, we will focus on the cross validation by time, which is `day of the week`.
 
-
-```{r validation_space, cache=TRUE, warning = FALSE, message = FALSE}
+```{r validation_space, cache=TRUE, warning = FALSE, message = FALSE, fig.width=16}
 ggplot()+
   geom_sf(data=intersect.counties, fill="transparent",color = "gray") +
   geom_sf(data = (week_predictions %>% 
                       mutate(schedule60 = map(data, pull, schedule60),
                              to = map(data, pull, to)) %>%
-                      select(schedule60, to, Observed, Prediction, Regression, -week) %>%
-                      unnest(cols = c(schedule60, to, Observed, Prediction)) %>%
-                      filter(Regression %in% c("DTime_Space_FE_timeLags")) %>%
+                      dplyr::select(schedule60, to, Observed, Prediction, Regression, -week) %>%
+                      unnest(cols = c(schedule60, to, Observed, Prediction)) %>% 
+                      #filter(Regression %in% c("DTime_Space_FE_timeLags")) %>%
                       group_by(schedule60, Regression, to) %>%
                       summarize(MAE = mean(abs(Observed-Prediction), na.rm = TRUE))%>%
-                      left_join(station.sf, by = c("to" = "STATION_NAME"))),
-             aes(color = MAE, geometry=geometry))+
-  scale_color_gradient(high = "#f95738", low = "#fabbaf", limits = c(0, 0.4)) +
-  facet_wrap(~Regression, ncol=2) +
-  labs(title="Mean Abs Error of Test Set", 
-       subtitle="Model D", 
+                      left_join(station.sf, by = c("to" = "STATION_NAME")) %>%
+                      st_as_sf()),
+             aes(color = MAE, geometry=geometry)) +
+  scale_color_gradient(high = "#f95738", low = "#fabbaf", limits = c(0, 0.4), na.value="#f0f0f0") +
+  facet_wrap(~Regression, ncol=4) +
+  labs(title="Mean Absolute Errors (MAE) of Test Set by Model", 
+       #subtitle="4 Regression Models", 
        caption = "Figure 4.4") +
   mapTheme()
 
 ```
+
+### 4.5. Categorical Prediction Accuracy - PPM
+
+Model D is good at predicting trains delayed within 5, 10, and 20 mins. 
+
+```{r validation ppm plots, cache=TRUE, warning = FALSE, message = FALSE, fig.width=16}
+
+ppm_validation <- week_predictions %>% 
+    #mutate(delay_minutes = map(data, pull, delay_minutes)) %>%
+    dplyr::select(Observed, Prediction, Regression, -week) %>%
+    unnest(cols = c(Observed, Prediction)) %>% 
+    filter(Regression %in% c("DTime_Space_FE_timeLags"))  %>%
+    mutate(ppm_5 = ifelse(Observed < 5, "1", "0"),
+           ppm_10 = ifelse(Observed < 10, "1", "0"),
+           ppm_20 = ifelse(Observed < 20, "1", "0"),
+           ppm_20plus = ifelse(Observed >= 20, "1", "0"))
+
+ggarrange(ncol=2, nrow=2,
+  ggplot(filter(ppm_validation, ppm_5 == "1")) +
+      geom_histogram(aes(Prediction), binwidth = 0.5, fill = palette2[2], alpha=0.8, na.rm = TRUE)+
+      geom_vline(aes(xintercept = 5), colour=palette2[1], size=0.8) +
+      #xlim(0, 100) +
+      labs(x="Predicted Delay Minutes", 
+           y="Frequency",
+           title="Actual delay time within 5 minutes",
+           caption=" ")+
+      plotTheme(),
+  ggplot(filter(ppm_validation, ppm_10 == "1")) +
+      geom_histogram(aes(Prediction), binwidth = 0.5, fill = palette2[2], alpha=0.8, na.rm = TRUE)+
+      geom_vline(aes(xintercept = 10), colour=palette2[1], size=0.8) +
+      #xlim(0, 100) +
+      labs(x="Predicted Delay Minutes", 
+           y="Frequency",
+           title="Actual delay time within 10 minutes",
+           caption=" ")+
+      plotTheme(),
+  ggplot(filter(ppm_validation, ppm_20 == "1")) +
+      geom_histogram(aes(Prediction), binwidth = 0.5, fill = palette2[2], alpha=0.8, na.rm = TRUE)+
+      geom_vline(aes(xintercept = 20), colour=palette2[1], size=0.8) +
+      #xlim(0, 100) +
+      labs(x="Predicted Delay Minutes", 
+           y="Frequency",
+           title="Actual delay time within 20 minutes",
+           caption="Figure 4.5")+
+      plotTheme(),
+  ggplot(filter(ppm_validation, ppm_20plus == "1")) +
+      geom_histogram(aes(Prediction), binwidth = 0.5, fill = palette2[2], alpha=0.8, na.rm = TRUE)+
+      geom_vline(aes(xintercept =20), colour=palette2[1], size=0.8) +
+      #xlim(0, 100) +
+      labs(x="Predicted Delay Minutes", 
+           y="Frequency",
+           title="Actual delay time above 20 minutes",
+           caption=" ")+
+      plotTheme())
+
+```
+
+
+Of each actual delay time category, our model successfully capture 46%, 58%, 59% and 9% of delayed trains.
+
+```{r validation table, cache=TRUE, warning = FALSE, message = FALSE, fig.width=16}
+ppm_accuracy <- data_frame(var = c("Within 5 minutes", "within 10 minutes", "within 20 minutes", "above 20 minutes"), 
+                           val = c(
+                                   round(nrow(subset(ppm_validation, ppm_5 == "1" & Prediction < 5))/nrow(subset(ppm_validation, ppm_5 == "1"))*100, digits=2),
+                                   round(nrow(subset(ppm_validation, ppm_10 == "1" & Prediction < 10))/nrow(subset(ppm_validation, ppm_10 == "1"))*100, digits=2),
+                                   round(nrow(subset(ppm_validation, ppm_20 == "1" & Prediction < 20))/nrow(subset(ppm_validation, ppm_20 == "1"))*100, digits=2),
+                                   round(nrow(subset(ppm_validation, ppm_20plus == "1" & Prediction >= 20))/nrow(subset(ppm_validation, ppm_20plus == "1"))*100, digits=2)))
+
+ppm_accuracy[,2] %>%  
+  `rownames<-`(., c("Arrived within 5 minutes", "Arrived within 10 minutes",
+                    "Arrived within 20 minutes", "Arrived above 20 minutes")) %>% 
+  kable(col.names = c("Prediction Accuracy Rate"), 
+        caption = "Table 4.3 Prediction Accuracy by Delay Time Category") %>% kable_styling()
+```
+
 
 <br />
 
@@ -932,7 +1034,7 @@ error.fold.time %>%
    labs(title="LOGO-CV of Train Delay Time by Day of the Week", 
         subtitle = "New Jersey Transit",
          x="Mean Absolute Error", y="Count",
-        caption="Figure 4.5")+
+        caption="Figure 4.6")+
    plotTheme()
 
 ```
@@ -956,15 +1058,17 @@ error.fold.time %>%
   summarize(CrossValidation = "LOGO CV by day of the Week",
                 Mean_MAE = round(mean(MAE), 3),
                 SD_MAE = round(sd(MAE), 3)) %>%
-  kable(caption = "Table 4.3 LOGO-CV errors") %>%
+  kable(caption = "Table 4.4") %>%
   kable_styling()
 ```
 
+<br />
+
+<br />
 
 ## 5. Conclusion
 
 
 
 As Amtrak runs in the same areas as NJ Transit, it would be useful to compare the delays between the two systems. To accomplish this, the next step would be to insert actual schedule times into the Kaggle data, enabling us to calculate delays and develop a prediction model. 
-
 
