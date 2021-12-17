@@ -1,7 +1,7 @@
 ---
 title: 'Modeling for New Jerser Transit Train Delay'
 author: "Jasmine Siyu Wu & Zoe Yoo"
-date: "10/19/2021"
+date: "12/17/2021"
 output:
   html_document:
     toc: yes
@@ -148,7 +148,7 @@ palette2 <- c("#324376", "#f95738")
 
 The Kaggle data originally is build up of basic identification data, then spatial and temporal data, broken down below.
 
-```{r images, echo=FALSE, out.width="100%", out.height="100%", fig.cap="Fig 2.0 Data Structure",fig.show='hold',fig.align='center'}
+```{r data structure images, echo=FALSE, out.width="100%", out.height="100%", fig.cap="Fig 2.0 Data Structure",fig.show='hold',fig.align='center'}
 
 knitr::include_graphics(c("images/table.jpg"))
 
@@ -157,7 +157,7 @@ knitr::include_graphics(c("images/table.jpg"))
 
 ### 2.1. Import Rail Delay Data
 
-
+Rail delay data is sourced from [**NJ Transit + Amtrak (NEC) Rail Performance**](https://www.kaggle.com/pranavbadami/nj-transit-amtrak-nec-performance?select=2018_11.csv)
 
 ```{r rail delay data,  message = FALSE, warning = FALSE, fig.align='center'}
 
@@ -482,7 +482,7 @@ ggplot(as.data.frame(station.sf))+
             plotTheme()
 ```
 
-The second indicator is the "Public Performance Measure," which refers to the percentage of trains that arrive at their stops within 5 minutes. Even using different brackets for PPM, it is clear that PPM varies spatially (and is especially low on the Philly-Atlantic City line). So, we concluded that there are sufficient delays within the system to warrant modeling.
+The second indicator is the "Public Performance Measure (PPM)," which refers to the percentage of trains that arrive at their stops within 5 minutes. Even using different brackets for PPM, it is clear that PPM varies spatially (and is especially low on the Philly-Atlantic City line). So, we concluded that there are sufficient delays within the system to warrant modeling.
 
 ```{r ppm plots,  message = FALSE, warning = FALSE, fig.width=15}
 ggarrange(ncol=3,
@@ -545,7 +545,7 @@ grid.arrange(
 
 ```
 
-From Figure 3.6, we noticed there are some time processes of train delay by day of the week and time of the day, so we engineered new variables of each train record: `weekday` and `time_of_day`.
+From Figure 3.6, we notice there are some time processes of train delay by day of the week and time of the day, so we engineer new variables of each train record: `weekday` and `time_of_day`.
 
 ```{r day of week, message = FALSE, warning = FALSE, fig.height=8, fig.width=10}
 grid.arrange(
@@ -579,7 +579,7 @@ rail <- rail %>%
                              dotw %in% c("Sat", "Sun")  ~ "Weekend"))
 ```
 
-There are relationships between delay and time lag, as shown in the scatter plots in Figure 3.7.
+There are relationships between delay and time lag delay, as shown in the scatter plots in Figure 3.7. We will consider these time lags as independent variables in the following modeling part. 
 
 ```{r correlation_lag, cache = TRUE, message = FALSE, warning = FALSE, fig.height=4, fig.width=12}
 plotData.lag <-
@@ -632,7 +632,7 @@ ggplot(data=plotData.lag, aes(Value, mean_delay_minutes)) +
 
 ### 4.1 Preparing Train and Test Sets
 
-For our models, we train on the first five weeks of our dataset and test on the last three. 
+For our models, we train on the first five weeks of our dataset and test on the last three (see Figure 4.1). 
 
 ```{r serial_correlation, cache = TRUE, message = FALSE, warning = FALSE, fig.width=10, fig.height=3}
 mondays <- 
@@ -690,7 +690,19 @@ rbind(mutate(rail.Train, Legend = "Training"),
 
 ### 4.2 Run Models
 
-We have developed four different models with increasing levels of detail. The first regression includes time and weather data and the second includes spatial and weather data; the third model combines the two. The fourth, and most detailed model, includes the aforementioned data, as well as data on lag time and stop sequencing. As can be seen in Table 4.1, the fourth model has the highest R^2^ value, so we will continue to test with this model.
+We have developed four different models with increasing levels of detail. 
+
+- Model A. Time: `hour` + `dotw` + `Temperature` + `Percipitation`
+
+- Model B. Space: `from` + `to` + `line` + `dotw` + `Temperature` + `Percipitation`
+
+- Model C. Time Space: `from` + `to` + `line` + `hour` + `dotw` + `Temperature` + `Percipitation`
+
+- Model D. Time Space Timelag: `from` + `to` + `stop_sequence` + `line` + `hour` + `time_of_day` + `weekday` + `dotw` + `Temperature` + `Percipitation` + `to_lag12Hours` + `to_lag1day` + `to_lag7day` + `from_lag12Hours` + `from_lag1day` + `from_lag7day`
+
+<br />
+
+As can be seen in Table 4.1, the fourth model has the highest adjusted $R^{2}$s value, so we will continue to test with this model.
 
 ```{r train_test, message = FALSE, warning = FALSE, results="asis"}
 reg1 <- 
@@ -723,6 +735,7 @@ omitList <- append(names(reg1$coefficients),
 
 stargazer(reg1, reg2, reg3, reg4, type="html", star.cutoffs = c(0.05, 0.01, 0.001), 
           median=TRUE, title="Table 4.1 Training Set Baseline Regression Results (Hide independent variables)", align=TRUE,
+          column.labels = c("A. Time", "B. Space", "C. Time Space", "D. Time Space Timelag"),
           single.row=TRUE, digits=2, omit = append(omitList, c("dotw4", "dotw5", "dotw6")))
 
 
@@ -781,7 +794,7 @@ week_predictions <-
 
 ### 4.4. Validate Test Set by Time and Space
 
-In Figure 4.2, it is clear that mean absolute error is also the least for the fourth, most detailed model.
+In Figure 4.2, it is clear that mean absolute error (MAE) is also the least for the fourth, most detailed model. 
 
 ```{r plot_errors_by_model, warning = FALSE, message = FALSE, fid.width=10}
 # week_predictions <- week_predictions %>%  
@@ -803,7 +816,7 @@ week_predictions %>%
   plotTheme()
 ```
 
-When testing the prediction models on the last three weeks of data, a few notable effects emerge. The time and space model, which combines temporal, spatial, and weather data, predicts fairly accurately for general trends and spikes of low delay, but misses most short periods of high delay. With the fourth model, that adds time lag, the model clearly attempts to replicate spikes of high delay based on those present in previous data; however, the exact dates for high delay occurrences are not predicted accurately, presumably because there are additional variables contributing to specific events.
+When testing the prediction models on the last three weeks of data, a few notable effects emerge (see Figure 4.3). The time and space model, which combines temporal, spatial, and weather data, predicts fairly accurately for general trends and spikes of low delay, but misses most short periods of high delay. With the fourth model, that adds time lag, the model clearly attempts to replicate spikes of high delay based on those present in previous data; however, the exact dates for high delay occurrences are not predicted accurately, presumably because there are additional variables contributing to specific events.
 
 ```{r error_vs_actual_timeseries, warning = FALSE, message = FALSE, fig.width=9, fig.height=6}
 week_predictions %>%  
@@ -827,7 +840,7 @@ week_predictions %>%
 
 As shown in Figure 4.4, many stations lack enough information to be predicted so that they display in light grey. Model D performs better in explaining time process than spatial process. In the last session, we will focus on the cross validation by time, which is `day of the week`.
 
-```{r validation_space, cache=TRUE, warning = FALSE, message = FALSE, fig.width=16}
+```{r validation_space, cache=TRUE, warning = FALSE, message = FALSE, out.width="100%"}
 ggplot()+
   geom_sf(data=intersect.counties, fill="transparent",color = "gray") +
   geom_sf(data = (week_predictions %>% 
@@ -850,9 +863,11 @@ ggplot()+
 
 ```
 
+<br />
+
 ### 4.5. Categorical Prediction Accuracy - PPM
 
-Model D is generally accurate when predicting trains delayed within 5, 10, and 20 mins (shown in Figure 4.5). 
+As Figure 4.5 shows, `Model D` is generally accurate when predicting trains delayed within 5, 10, and 20 minutes. Especially for puctuality rate of 10 minutes and 20 minutes, `Model D` successfully predict a majority of train delays.
 
 ```{r validation ppm plots, cache=TRUE, warning = FALSE, message = FALSE, fig.width=16}
 
@@ -907,7 +922,7 @@ ggarrange(ncol=2, nrow=2,
 ```
 
 
-Of each actual delay time category, our model successfully captures 57%, 71%, and 73% of delayed trains for categories under 20 minutes, but only 9% of trains with delay over 20 minutes.
+Of each actual delay time category, our model successfully captures 57%, 71%, and 73% of delayed trains for categories under 20 minutes, but only 9% of trains with delay over 20 minutes. That is, `Model D` cannot predict almost 90% of trains that delayed over 20 minutes.
 
 ```{r ppm validation table, cache=TRUE, warning = FALSE, message = FALSE, fig.width=16}
 ppm_accuracy <- data_frame(var = c("Within 5 minutes", "within 10 minutes", "within 20 minutes", "above 20 minutes"), 
@@ -930,7 +945,7 @@ ppm_accuracy[,2] %>%
 
 ### 4.6. Cross-Validation
 
-For cross-validation, we train on day of the week, training one day against the six other days. In the results from the cross-validation process (shown in Figure 4.6), daily mean absolute error is mostly low, with mean MAE being 0.6 minutes and maximum daily MAE at just under two minutes.
+For cross-validation, we train on `day of the week`, cross validating one day against the six other days. In the results from the cross-validation process (shown in Figure 4.6), daily mean absolute error is mostly low, with mean MAE being 0.6 minutes and maximum daily MAE at just under two minutes.
 
 ```{r cross validation, warning = FALSE, message = FALSE, fig.width=10, results=FALSE}
 ride.panel8week <- rbind(
@@ -1083,4 +1098,3 @@ Currently, the model predicts well (correctly for the majority of data) for dela
 As our prediction model is the basis of the Delay Estimator, refining it is crucial to developing a usable tool for both the New Jersey Transit app and for other transit agencies that would be interested in employing delay prediction data. To improve our current model, and especially predicting delays of over 20 minutes (where the model is weaker), an important step would be to research causes of severe train delays, then incorporating these factors as independent variables. We also need to incorporate factors that lessen the greater level of spatial Mean Absolute Error that the model currently has.
 
 There are several future steps that would help to make the Delay Estimator more practically useful. As Amtrak runs in the same areas as NJ Transit, it would be useful to compare the delays between the two systems. To accomplish this, the next step would be to insert actual schedule times into the Kaggle data, enabling us to calculate delays and develop a prediction model. Since Amtrak is also heavy rail, using Amtrak data might also help improve accuracy and consistency for the NJ Transit model, through identifying common independent variables that relate to delay. Additionally, this dataset is currently limited to heavy rail in the New Jersey Transit system, so much of the delay on connectors for multi-leg trips is unavailable. Because light rail is somewhat similar to heavy rail in how it functions, it might be possible to apply the current model structure to light rail data. Buses, which are the other connectors between multi-leg rail trips, would also be desirable to predict delays for; however, as buses are far more susceptible to delay from a variety of factors, developing a predictive model for bus delay would be far more labor-intensive.
-
