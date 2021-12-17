@@ -146,8 +146,13 @@ palette2 <- c("#324376", "#f95738")
 
 ## 2. Data Wrangling
 
+The Kaggle data originally is build up of basic identification data, then spatial and temporal data, broken down below.
 
+```{r images, echo=FALSE, out.width="100%", out.height="100%", fig.cap="Fig 2.0 Data Structure",fig.show='hold',fig.align='center'}
 
+knitr::include_graphics(c("images/table.jpg"))
+
+```
 <br />
 
 ### 2.1. Import Rail Delay Data
@@ -195,8 +200,7 @@ summary_statistics %>%
   kable_styling()
 ```
 
-We first needed to actually determine if delay is severe enough often enough to warrant developing a model. Most trains in our sample set are delayed under ten minutes, with frequency reaching very  low levels for delay over 40 minutes, and even less for over an hour.
-
+Before developing a model, we examine the data to determine whether delay in the NJ Transit system happens often enough and is severe enough to warrant our tool. As can be seen in Figures 2.1 and 2.2, most trains in our sample set are delayed under ten minutes, with frequency reaching very  low levels for delay over 40 minutes, and even less for over an hour.
 
 ```{r rail delay histogram,  message = FALSE, warning = FALSE, fig.align='center', fig.width=10}
 ggplot(rail)+
@@ -293,6 +297,7 @@ grid.arrange(bottom="Figure 2.3 Weather Data, New Jersey, January - February, 20
 
 ### 2.3. Import Station and Place Boundary Data
 
+To integrate spatial data, we download the locations of NJ Transit stations, as well as additional county-level geographies.
 
 ```{r station data,  message = FALSE, warning = FALSE, results = FALSE, fig.align='center'}
 station.sf <- st_read("https://opendata.arcgis.com/datasets/4809dada94c542e0beff00600ee930f6_0.geojson") %>%
@@ -360,7 +365,7 @@ states <- rbind(get_acs(geography = "state",
 
 ```
 
-
+The spatial extent of the NJ Transit rail system is plotted below; while most stations are in New Jersey, there is also one in Philadelphia and three in New York. 
 
 ```{r station plot,  message = FALSE, warning = FALSE, fig.width=8, fig.align='center'}
 # ggplot() +
@@ -378,6 +383,7 @@ station.sf %>% st_transform(crs = 4326) %>%
 
 ### 2.4. Create Space-Time Panel and Time Lags
 
+To test the effect of time lag, we calculate time lag values for periods of twelve hours up to seven days.
 
 ```{r bike panel,  message = FALSE, warning = FALSE}
 rail.template <- rail %>%
@@ -429,7 +435,7 @@ rail.panel <-
 
 ## 3. Exploratory Analysis
 
-
+First, we look at the general punctuality rate of trains for all stops; most trains arrive within an acceptable time frame, or under 10 minutes of delay, with only about 3% of stops seeing delays of over 20 minutes.
 
 ```{r ppm data,  message = FALSE, warning = FALSE}
 
@@ -448,7 +454,8 @@ ppm_summary[,2] %>%
 
 ```
 
-To further examine delay, we used two metrics from the UK Southern Railroad; the first, "on time," considers the percentage of trains that arrive at each stop on schedule. For New Jersey Transit, the on-time rate of trains is usually low, with most trains only reaching each stop at its scheduled time 10-20% of the time.
+To further examine delay, we used two metrics from the UK Southern Railway's [train service punctuality and reliability measures
+](https://www.southernrailway.com/about-us/how-were-performing/train-service-punctuality-and-reliability); the first, "on time," considers the percentage of trains that arrive at each stop on schedule. For New Jersey Transit, the on-time rate of trains is usually low, with most trains only reaching each stop at its scheduled time 10-20% of the time.
 
 ```{r on time rate plots,  message = FALSE, warning = FALSE, fig.width=10}
 station.sf <- rail %>% group_by(to_id) %>%
@@ -509,18 +516,19 @@ ggarrange(ncol=3,
 
 ```
 
-
+By comparing stops per hour to delay per hour for all stations, we can see that there is no inherent pattern to high delay in relation to the number of stops per hour, except that the highest spikes of delay do occur during periods of more stops per hour.
 
 ```{r rail trip timeseries,  message = FALSE, warning = FALSE, fig.width=12, fig.height=8}
+
 grid.arrange(
   ggplot(rail %>%
            group_by(schedule60) %>%
            tally())+
     geom_line(aes(x = schedule60, y = n), color = palette2[1])+
-    labs(title="Total train stops per hour of all NJ Transit stations",
+    labs(title="Total Train Stops per Hour of All NJ Transit Stations",
          subtitle="Jan. - Feb., 2020",
          x="Date", 
-         y="Total train stops",
+         y="Total Train Stops",
          caption="Figure 3.3")+
     plotTheme(),
   ggplot(rail %>%
@@ -528,16 +536,16 @@ grid.arrange(
            summarise(mean_delay_minutes = mean(delay_minutes)))+
            #tally())+
     geom_line(aes(x = schedule60, y = mean_delay_minutes), color = palette2[2])+
-    labs(title="Average delay time per hour of all NJ Transit stations",
+    labs(title="Average Delay Time per Hour of All NJ Transit Stations",
          subtitle="Jan. - Feb., 2020",
          x="Date", 
          y="Average delay minutes",
          caption="Figure 3.4")+
     plotTheme())
+
 ```
 
-
-In Figure 3.6, We noticed there are some time processes of train delay by day of the week and time of the day, so we engineered new variables of each train record: `weekday` and `time_of_day`.
+From Figure 3.6, we noticed there are some time processes of train delay by day of the week and time of the day, so we engineered new variables of each train record: `weekday` and `time_of_day`.
 
 ```{r day of week, message = FALSE, warning = FALSE, fig.height=8, fig.width=10}
 grid.arrange(
@@ -571,6 +579,7 @@ rail <- rail %>%
                              dotw %in% c("Sat", "Sun")  ~ "Weekend"))
 ```
 
+There are relationships between delay and time lag, as shown in the scatter plots in Figure 3.7.
 
 ```{r correlation_lag, cache = TRUE, message = FALSE, warning = FALSE, fig.height=4, fig.width=12}
 plotData.lag <-
@@ -616,6 +625,7 @@ ggplot(data=plotData.lag, aes(Value, mean_delay_minutes)) +
 
 
 ## 4. Modeling and Validation
+
 
 
 <br />
@@ -732,7 +742,6 @@ summary(reg4) %>%
 
 ### 4.3. Predict for Test Data
 
-
 ```{r predict_for_test, warning = FALSE, message = FALSE}
 # nest data
 rail.Test.weekNest <- 
@@ -772,6 +781,7 @@ week_predictions <-
 
 ### 4.4. Validate Test Set by Time and Space
 
+In Figure 4.2, it is clear that mean absolute error is also the least for the fourth, most detailed model.
 
 ```{r plot_errors_by_model, warning = FALSE, message = FALSE, fid.width=10}
 # week_predictions <- week_predictions %>%  
@@ -815,7 +825,6 @@ week_predictions %>%
 
 <br />
 
-
 As shown in Figure 4.4, many stations lack enough information to be predicted so that they display in light grey. Model D performs better in explaining time process than spatial process. In the last session, we will focus on the cross validation by time, which is `day of the week`.
 
 ```{r validation_space, cache=TRUE, warning = FALSE, message = FALSE, fig.width=16}
@@ -843,7 +852,7 @@ ggplot()+
 
 ### 4.5. Categorical Prediction Accuracy - PPM
 
-Model D is good at predicting trains delayed within 5, 10, and 20 mins. 
+Model D is generally accurate when predicting trains delayed within 5, 10, and 20 mins (shown in Figure 4.5). 
 
 ```{r validation ppm plots, cache=TRUE, warning = FALSE, message = FALSE, fig.width=16}
 
@@ -898,7 +907,7 @@ ggarrange(ncol=2, nrow=2,
 ```
 
 
-Of each actual delay time category, our model successfully capture 46%, 58%, 59% and 9% of delayed trains.
+Of each actual delay time category, our model successfully captures 57%, 71%, and 73% of delayed trains for categories under 20 minutes, but only 9% of trains with delay over 20 minutes.
 
 ```{r ppm validation table, cache=TRUE, warning = FALSE, message = FALSE, fig.width=16}
 ppm_accuracy <- data_frame(var = c("Within 5 minutes", "within 10 minutes", "within 20 minutes", "above 20 minutes"), 
@@ -919,8 +928,9 @@ ppm_accuracy[,2] %>%
 <br />
 
 
-### 4.6. Cross-Validaton
+### 4.6. Cross-Validation
 
+For cross-validation, we train on day of the week, training one day against the six other days. In the results from the cross-validation process (shown in Figure 4.6), daily mean absolute error is mostly low, with mean MAE being 0.6 minutes and maximum daily MAE at just under two minutes.
 
 ```{r cross validation, warning = FALSE, message = FALSE, fig.width=10, results=FALSE}
 ride.panel8week <- rbind(
@@ -1068,7 +1078,9 @@ error.fold.time %>%
 
 ## 5. Conclusion
 
+Currently, the model predicts well (correctly for the majority of data) for delays under 20 minutes. Though our focus was not originally on being able to predict delays far in advance, our model can be applied as far in advance as needed. With more computing power, which would allow us to train on a wider range of dates, we could achieve higher accuracy for advance predictions.
 
+As our prediction model is the basis of the Delay Estimator, refining it is crucial to developing a usable tool for both the New Jersey Transit app and for other transit agencies that would be interested in employing delay prediction data. To improve our current model, and especially predicting delays of over 20 minutes (where the model is weaker), an important step would be to research causes of severe train delays, then incorporating these factors as independent variables. We also need to incorporate factors that lessen the greater level of spatial Mean Absolute Error that the model currently has.
 
-As Amtrak runs in the same areas as NJ Transit, it would be useful to compare the delays between the two systems. To accomplish this, the next step would be to insert actual schedule times into the Kaggle data, enabling us to calculate delays and develop a prediction model. 
+There are several future steps that would help to make the Delay Estimator more practically useful. As Amtrak runs in the same areas as NJ Transit, it would be useful to compare the delays between the two systems. To accomplish this, the next step would be to insert actual schedule times into the Kaggle data, enabling us to calculate delays and develop a prediction model. Since Amtrak is also heavy rail, using Amtrak data might also help improve accuracy and consistency for the NJ Transit model, through identifying common independent variables that relate to delay. Additionally, this dataset is currently limited to heavy rail in the New Jersey Transit system, so much of the delay on connectors for multi-leg trips is unavailable. Because light rail is somewhat similar to heavy rail in how it functions, it might be possible to apply the current model structure to light rail data. Buses, which are the other connectors between multi-leg rail trips, would also be desirable to predict delays for; however, as buses are far more susceptible to delay from a variety of factors, developing a predictive model for bus delay would be far more labor-intensive.
 
