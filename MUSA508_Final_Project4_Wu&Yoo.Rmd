@@ -1,5 +1,5 @@
 ---
-title: 'Modeling for New Jerser Transit Train Delay'
+title: 'Modeling for New Jersey Transit Train Delay'
 author: "Jasmine Siyu Wu & Zoe Yoo"
 date: "12/17/2021"
 output:
