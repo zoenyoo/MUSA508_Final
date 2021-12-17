@@ -552,7 +552,7 @@ grid.arrange(
   ggplot(rail)+
        geom_freqpoly(aes(hour(schedule60), color = dotw), binwidth = 1)+
        xlim(0, 24)+
-       labs(title="Total Rail Stops of New Jersey Transit",
+       labs(title="Total rail stops of New Jersey Transit",
             subtitle = "New Jersey, Jan. - Feb., 2020",
             x="Hour", 
             y="Rail Stop Counts", caption = "Figure 3.5")+
@@ -562,7 +562,7 @@ grid.arrange(
          summarise(mean_delay_minutes = mean(delay_minutes)))+
        geom_line(aes(x=hour, y=mean_delay_minutes, color = dotw), binwidth = 1)+
        xlim(0, 24)+
-       labs(title="Average Delay Time per Hour of New Jersey Transit",
+       labs(title="Average delay time per hour of New Jersey Transit",
             subtitle = "New Jersey, Jan. - Feb., 2020",
             x="Hour", 
             y="Average Delay Minutes", caption = "Figure 3.6")+
@@ -702,7 +702,7 @@ We have developed four different models with increasing levels of detail.
 
 <br />
 
-As can be seen in Table 4.1, the fourth model has the highest adjusted $R^{2}$ value, so we will continue to test with this model.
+As can be seen in Table 4.1, the fourth model has the highest adjusted $R^{2}$s value, so we will continue to test with this model.
 
 ```{r train_test, message = FALSE, warning = FALSE, results="asis"}
 reg1 <- 
@@ -811,7 +811,7 @@ week_predictions %>%
   ggplot(aes(week, MAE)) + 
     geom_bar(aes(fill = Regression), position = "dodge", stat="identity") +
     scale_fill_manual(values = palette5) +
-    labs(title = "Mean Absolute Errors (MAE) by Model Specification and Week",
+    labs(title = "Mean Absolute Errors (MAE) by model specification and week",
          caption="Figure 4.2") +
   plotTheme()
 ```
@@ -830,7 +830,7 @@ week_predictions %>%
     ggplot(aes(schedule60, Value, colour=Variable)) + geom_line(size = 1.1, na.rm = T) + 
       facet_wrap(~Regression, ncol=1) +
       scale_colour_manual(values = palette2) +
-      labs(title = "Mean Predicted/Observed Train Delay Minutes by Hourly Interval", 
+      labs(title = "Mean Predicted/Observed train delay minutes by hourly interval", 
            x = "Hour", y= "Mean delay minutes",
            caption = "Figure 4.3") +
       plotTheme()
